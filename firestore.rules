@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() { return request.auth != null; }
+    function isUser(userId) { return isAuthenticated() && request.auth.uid == userId; }
+    function isInvitationOwner(invitationId) {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/invitations/$(invitationId)).data.ownerId == request.auth.uid;
+    }
+    function isPublishedInvitation(invitationId) {
+      return get(/databases/$(database)/documents/invitations/$(invitationId)).data.status == 'Published';
+    }
+
+    // Stripe Webhook Idempotency Collection: Client access forbidden
+    match /stripeEvents/{eventId} {
+      allow read, write: if false;
+    }
+
+    // User Profile Document: users/{userId}
+    match /users/{userId} {
+      allow read: if isUser(userId);
+      // Client cannot write sensitive billing fields
+      allow create, update: if isUser(userId) &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['planId', 'billingStatus']);
+
+      // User Events subcollection: users/{userId}/events/{eventId}
+      match /events/{eventId} {
+        allow read: if isUser(userId);
+        allow create: if isUser(userId);
+        // Client cannot modify billing or entitlement fields directly
+        allow update: if isUser(userId) &&
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['planId', 'billingStatus', 'purchaseId', 'entitlementSnapshot']);
+        allow delete: if isUser(userId);
+      }
+
+      // Purchases subcollection: Client read-only, write server-only
+      match /purchases/{purchaseId} {
+        allow read: if isUser(userId);
+        allow write: if false;
+      }
+    }
+
+    // Shared Invitations collection: invitations/{invitationId}
+    match /invitations/{invitationId} {
+      allow read: if resource.data.status == 'Published' || (isAuthenticated() && resource.data.ownerId == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+
+      // PRIVATE Guests subcollection: Owner ONLY!
+      match /guests/{guestId} {
+        allow read, write: if isInvitationOwner(invitationId);
+      }
+
+      // Tables subcollection
+      match /tables/{tableId} {
+        allow read: if isPublishedInvitation(invitationId) || isInvitationOwner(invitationId);
+        allow write: if isInvitationOwner(invitationId);
+      }
+
+      // Gifts subcollection: Public read ONLY enabled gifts
+      match /gifts/{giftId} {
+        allow read: if (isPublishedInvitation(invitationId) && resource.data.enabled == true) || isInvitationOwner(invitationId);
+        allow write: if isInvitationOwner(invitationId);
+      }
+
+      // Gallery subcollection: Public read ONLY enabled photos
+      match /gallery/{photoId} {
+        allow read: if (isPublishedInvitation(invitationId) && resource.data.enabled == true) || isInvitationOwner(invitationId);
+        allow write: if isInvitationOwner(invitationId);
+      }
+
+      // Activities subcollection: Owner ONLY
+      match /activities/{activityId} {
+        allow read, write: if isInvitationOwner(invitationId);
+      }
+
+      // GuestBook subcollection: public creation with size validation, update/delete owner only
+      match /guestbook/{msgId} {
+        allow read: if isPublishedInvitation(invitationId) || isInvitationOwner(invitationId);
+        allow create: if (isPublishedInvitation(invitationId) || isInvitationOwner(invitationId)) &&
+          request.resource.data.name is string && request.resource.data.name.size() <= 100 &&
+          request.resource.data.text is string && request.resource.data.text.size() <= 500;
+        allow update, delete: if isInvitationOwner(invitationId);
+      }
+    }
+
+    // ISOLATED PUBLIC BEARER TOKEN ACCESS: guestAccess/{token}
+    match /guestAccess/{token} {
+      allow get: if resource.data.status == 'Published' || (isAuthenticated() && resource.data.ownerId == request.auth.uid);
+      allow list: if false;
+      allow create, delete: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if (isAuthenticated() && resource.data.ownerId == request.auth.uid) ||
+        (resource.data.status == 'Published' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rsvp', 'confirmedGuests', 'updatedAt']) &&
+          request.resource.data.rsvp in ['Confirmado', 'Pendiente', 'Rechazado'] &&
+          request.resource.data.confirmedGuests is int &&
+          request.resource.data.confirmedGuests >= 0 &&
+          request.resource.data.confirmedGuests <= resource.data.passes);
+    }
+  }
+}

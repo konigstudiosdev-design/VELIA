@@ -1,0 +1,10 @@
+{
+  "description": "Design and share premium digital invitations for weddings, birthdays, and special events, managing every detail effortlessly from one platform.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
