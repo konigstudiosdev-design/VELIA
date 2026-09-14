@@ -17,6 +17,7 @@ import OfflineBanner from './components/OfflineBanner'
 import PwaInstallPrompt from './components/PwaInstallPrompt'
 import ToastContainer, { ToastMessage } from './components/Toast'
 import PaymentStatus from './components/billing/PaymentStatus'
+import HowItWorksModal from './components/HowItWorksModal'
 
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import {
@@ -310,7 +311,7 @@ function CategoriesSection({ onStartCreate }: { onStartCreate: () => void }) {
 }
 
 // ─── How It Works ─────────────────────────────────────────────────────────────
-function HowItWorksSection() {
+function HowItWorksSection({ onOpenHowItWorks }: { onOpenHowItWorks: () => void }) {
   const steps = [
     {
       num: '01',
@@ -332,17 +333,27 @@ function HowItWorksSection() {
   return (
     <section id="Cómo funciona" className="bg-white py-24 lg:py-36">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        <Reveal className="mb-16 lg:mb-24 max-w-xl">
-          <span className="font-body text-[0.65rem] tracking-[0.35em] text-champagne uppercase">Proceso</span>
-          <h2 className="font-display text-4xl lg:text-[3.5rem] text-brown font-light mt-3 leading-tight">
-            De tu idea a tu invitación en minutos.
-          </h2>
+        <Reveal className="mb-16 lg:mb-24 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="max-w-xl">
+            <span className="font-body text-[0.65rem] tracking-[0.35em] text-champagne uppercase">Proceso</span>
+            <h2 className="font-display text-4xl lg:text-[3.5rem] text-brown font-light mt-3 leading-tight">
+              De tu idea a tu invitación en minutos.
+            </h2>
+          </div>
+
+          <button
+            onClick={onOpenHowItWorks}
+            className="inline-flex items-center gap-2 font-body text-xs font-medium text-brown border border-brown/25 px-6 py-3 rounded-full hover:border-brown hover:bg-ivory transition-colors cursor-pointer self-start md:self-auto"
+          >
+            <span>Ver guía paso a paso</span>
+            <span>→</span>
+          </button>
         </Reveal>
 
         <div className="grid lg:grid-cols-3 gap-12 lg:gap-16">
           {steps.map((step, i) => (
             <Reveal key={step.num} delay={i * 140}>
-              <div className="group">
+              <div onClick={onOpenHowItWorks} className="group cursor-pointer">
                 <span className="block font-display text-[5.5rem] lg:text-[7rem] text-beige font-light leading-none mb-6 group-hover:text-champagne/25 transition-colors duration-500 select-none">
                   {step.num}
                 </span>
@@ -359,7 +370,7 @@ function HowItWorksSection() {
 }
 
 // ─── Editor Section ───────────────────────────────────────────────────────────
-function EditorSection({ onStartCreate }: { onStartCreate: () => void }) {
+function EditorSection({ onOpenHowItWorks }: { onOpenHowItWorks: () => void }) {
   const [activeSection, setActiveSection] = useState(0)
   const sections = ['Portada', 'Evento', 'Ceremonia', 'RSVP', 'Galería', 'Regalos']
 
@@ -376,7 +387,7 @@ function EditorSection({ onStartCreate }: { onStartCreate: () => void }) {
               Modifica tu invitación cuando quieras. Cambia textos, fotografías, colores y secciones sin empezar de nuevo.
             </p>
             <button
-              onClick={onStartCreate}
+              onClick={onOpenHowItWorks}
               className="inline-flex items-center gap-2 font-body text-sm text-brown border-b border-brown/25 pb-0.5 hover:border-brown transition-colors duration-200 cursor-pointer"
             >
               Ver cómo funciona
@@ -389,7 +400,8 @@ function EditorSection({ onStartCreate }: { onStartCreate: () => void }) {
           {/* Editor mockup */}
           <Reveal delay={200}>
             <div
-              className="bg-white border border-beige/70 rounded-xl overflow-hidden"
+              className="bg-white border border-beige/70 rounded-xl overflow-hidden cursor-pointer"
+              onClick={onOpenHowItWorks}
               style={{ boxShadow: '0 24px 80px rgba(51,43,39,0.1), 0 4px 16px rgba(51,43,39,0.06)' }}
             >
               <div className="flex items-center gap-1.5 px-4 py-3 bg-ivory/60 border-b border-beige/60">
@@ -407,7 +419,10 @@ function EditorSection({ onStartCreate }: { onStartCreate: () => void }) {
                   {sections.map((sec, i) => (
                     <button
                       key={sec}
-                      onClick={() => setActiveSection(i)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setActiveSection(i)
+                      }}
                       className={`text-left px-2.5 py-[7px] rounded text-[0.7rem] font-body transition-colors cursor-pointer ${
                         i === activeSection
                           ? 'bg-champagne/20 text-brown font-medium'
@@ -953,8 +968,9 @@ function AppContent() {
     setToasts(prev => prev.filter(t => t.id !== id))
   }
 
-  // Payment Status Modal State
+  // Modals
   const [paymentModalStatus, setPaymentModalStatus] = useState<BillingStatus | null>(null)
+  const [showHowItWorksModal, setShowHowItWorksModal] = useState<boolean>(false)
 
   // Public Guest view state
   const [loadingPublic, setLoadingPublic] = useState(false)
@@ -1326,8 +1342,8 @@ function AppContent() {
           <>
             <HeroSection onStartCreate={handleStartCreate} />
             <CategoriesSection onStartCreate={handleStartCreate} />
-            <HowItWorksSection />
-            <EditorSection onStartCreate={handleStartCreate} />
+            <HowItWorksSection onOpenHowItWorks={() => setShowHowItWorksModal(true)} />
+            <EditorSection onOpenHowItWorks={() => setShowHowItWorksModal(true)} />
             <FeaturesSection />
             <TemplatesSection onExploreDesigns={() => setCurrentView('templates')} />
             <DashboardSection onStartCreate={handleStartCreate} />
@@ -1408,7 +1424,7 @@ function AppContent() {
       {/* Shared Footer on Landing View */}
       {currentView === 'landing' && <Footer onNavigate={setCurrentView} />}
 
-      {/* Floating PWA Install Prompt, Payment Status, & Toast Container */}
+      {/* Floating PWA Install Prompt, Payment Status, How It Works Modal & Toast Container */}
       <PwaInstallPrompt />
       <ToastContainer toasts={toasts} onDismiss={removeToast} />
 
@@ -1416,6 +1432,13 @@ function AppContent() {
         <PaymentStatus
           status={paymentModalStatus}
           onClose={() => setPaymentModalStatus(null)}
+        />
+      )}
+
+      {showHowItWorksModal && (
+        <HowItWorksModal
+          onClose={() => setShowHowItWorksModal(false)}
+          onStartCreate={handleStartCreate}
         />
       )}
     </div>
