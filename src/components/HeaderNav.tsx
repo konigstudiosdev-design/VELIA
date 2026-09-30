@@ -9,13 +9,16 @@ interface HeaderNavProps {
 }
 
 export default function HeaderNav({ currentView, onNavigate, userEmail }: HeaderNavProps) {
-  const { user, logout } = useAuth()
+  const { user, userProfile, logout } = useAuth()
 
-  if (currentView === 'dashboard') {
+  if (currentView === 'dashboard' || currentView === 'partner_dashboard' || currentView === 'admin_dashboard') {
     return null
   }
 
   const isLanding = currentView === 'landing'
+  const isOwnerAdmin =
+    user?.email?.toLowerCase() === 'konigstudios.dev@gmail.com' ||
+    userProfile?.role === 'admin'
 
   const handleLogout = async () => {
     try {
@@ -72,20 +75,50 @@ export default function HeaderNav({ currentView, onNavigate, userEmail }: Header
               >
                 Precios
               </a>
+              <button
+                onClick={() => onNavigate('partner_onboarding')}
+                className="font-body text-[0.8125rem] tracking-wide text-champagne hover:text-brown font-medium transition-colors duration-200 cursor-pointer"
+              >
+                Programa Partners ✨
+              </button>
             </nav>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {user ? (
                 <>
-                  <button
-                    onClick={() => onNavigate('dashboard')}
-                    className="font-body text-[0.8125rem] font-medium bg-brown text-ivory px-5 lg:px-6 py-2.5 rounded-full hover:bg-ink transition-all duration-300 hover:scale-[1.02] cursor-pointer"
-                  >
-                    Mi Panel
-                  </button>
+                  {isOwnerAdmin ? (
+                    <>
+                      <button
+                        onClick={() => onNavigate('admin_dashboard')}
+                        className="font-body text-xs font-medium bg-brown text-ivory px-4 py-2 rounded-full hover:bg-ink transition-all cursor-pointer"
+                      >
+                        Panel del Dueño
+                      </button>
+                      <button
+                        onClick={() => onNavigate('onboarding')}
+                        className="font-body text-xs font-medium bg-champagne text-brown px-4 py-2 rounded-full hover:bg-[#d4b990] transition-all cursor-pointer"
+                      >
+                        ✨ Crear Invitación
+                      </button>
+                    </>
+                  ) : userProfile?.role === 'partner' ? (
+                    <button
+                      onClick={() => onNavigate('partner_dashboard')}
+                      className="font-body text-[0.8125rem] font-medium bg-brown text-ivory px-5 lg:px-6 py-2.5 rounded-full hover:bg-ink transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+                    >
+                      Panel Partner
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onNavigate('dashboard')}
+                      className="font-body text-[0.8125rem] font-medium bg-brown text-ivory px-5 lg:px-6 py-2.5 rounded-full hover:bg-ink transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+                    >
+                      Mi Panel
+                    </button>
+                  )}
                   <button
                     onClick={handleLogout}
-                    className="font-body text-xs text-brown/60 hover:text-brown transition-colors cursor-pointer"
+                    className="font-body text-xs text-brown/60 hover:text-brown transition-colors cursor-pointer ml-1"
                   >
                     Salir
                   </button>

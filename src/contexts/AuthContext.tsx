@@ -6,6 +6,7 @@ import {
   loginWithEmail,
   registerWithEmail,
   loginWithGoogle,
+  handleGoogleRedirectResult,
   logoutUser,
   resetPassword,
   syncUserProfile,
@@ -31,8 +32,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState<boolean>(true)
 
   useEffect(() => {
+    // Process redirect result asynchronously without blocking initial load
+    handleGoogleRedirectResult().then((redirectProfile) => {
+      if (redirectProfile) {
+        setUserProfile(redirectProfile)
+      }
+    }).catch(err => console.error('Error procesando redirección de Google:', err))
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setUser(fbUser)
+
       if (fbUser) {
         try {
           const profile = await syncUserProfile(fbUser)
@@ -43,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUserProfile(null)
       }
+
       setLoading(false)
     })
 
@@ -63,7 +73,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginGoogle = async () => {
     const profile = await loginWithGoogle()
-    setUserProfile(profile)
+    if (profile) {
+      setUserProfile(profile)
+    }
     return profile
   }
 

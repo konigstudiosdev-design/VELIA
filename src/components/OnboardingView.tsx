@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { DesignStyle, EventData, EventType } from '../types'
+import { getEventTypeConfig } from '../config/eventTypeConfig'
+import CustomDatePicker from './CustomDatePicker'
 
 interface OnboardingViewProps {
   initialData: EventData
@@ -97,7 +99,7 @@ const STYLES_DATA: {
     style: 'Moderno',
     desc: 'Audaz, arquitectónico, líneas bien definidas.',
     colors: ['#1C1B1A', '#C8A982', '#E9DED2'],
-    img: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&h=800&fit=crop&auto=format',
+    img: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&h=800&fit=crop&auto=format',
   },
   {
     style: 'Floral',
@@ -118,11 +120,11 @@ export default function OnboardingView({ initialData, onComplete }: OnboardingVi
 
   // Form states
   const [eventType, setEventType] = useState<EventType>(initialData.eventType || 'Boda')
-  const [person1Name, setPerson1Name] = useState(initialData.person1Name || 'Lucía')
-  const [person2Name, setPerson2Name] = useState(initialData.person2Name || 'Mateo')
-  const [age, setAge] = useState(initialData.age || '30')
-  const [yearsToCelebrate, setYearsToCelebrate] = useState(initialData.yearsToCelebrate || '10')
-  const [date, setDate] = useState(initialData.date || '2027-09-18')
+  const [person1Name, setPerson1Name] = useState(initialData.person1Name || '')
+  const [person2Name, setPerson2Name] = useState(initialData.person2Name || '')
+  const [age, setAge] = useState(initialData.age || '')
+  const [yearsToCelebrate, setYearsToCelebrate] = useState(initialData.yearsToCelebrate || '')
+  const [date, setDate] = useState(initialData.date || '')
   const [style, setStyle] = useState<DesignStyle>(initialData.style || 'Editorial')
 
   const handleNextStep1 = () => {
@@ -135,9 +137,9 @@ export default function OnboardingView({ initialData, onComplete }: OnboardingVi
   }
 
   const handleFinish = () => {
-    // Generate dynamic slug based on names
+    const config = getEventTypeConfig(eventType)
     let slug = 'evento'
-    if (eventType === 'Boda' || eventType === 'Aniversario') {
+    if (config.allowedFields.person2Name && person2Name.trim()) {
       slug = `${person1Name.toLowerCase().trim()}-y-${person2Name.toLowerCase().trim()}`
     } else {
       slug = `${person1Name.toLowerCase().trim()}-${eventType.toLowerCase().replace(/\s+/g, '')}`
@@ -148,9 +150,9 @@ export default function OnboardingView({ initialData, onComplete }: OnboardingVi
       ...initialData,
       eventType,
       person1Name,
-      person2Name: eventType === 'Boda' || eventType === 'Aniversario' ? person2Name : undefined,
-      age: eventType === 'Cumpleaños' ? age : undefined,
-      yearsToCelebrate: eventType === 'Aniversario' ? yearsToCelebrate : undefined,
+      person2Name: config.allowedFields.person2Name ? person2Name : '',
+      age: config.allowedFields.age ? age : '',
+      yearsToCelebrate: config.allowedFields.yearsToCelebrate ? yearsToCelebrate : '',
       date,
       style,
       customSlug: `velia.mx/e/${slug}`,
@@ -230,6 +232,9 @@ export default function OnboardingView({ initialData, onComplete }: OnboardingVi
                       <img
                         src={item.img}
                         alt={item.type}
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=500&h=500&fit=crop&auto=format'
+                        }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-brown/15" />
@@ -276,183 +281,108 @@ export default function OnboardingView({ initialData, onComplete }: OnboardingVi
         )}
 
         {/* ── STEP 2: DYNAMIC EVENT DETAILS ─────────────────────────────────── */}
-        {step === 2 && (
-          <div className="max-w-xl mx-auto bg-white border border-beige/80 rounded-2xl p-8 lg:p-10 shadow-sm">
-            <form onSubmit={handleNextStep2} className="space-y-5">
-              {/* Conditional fields based on eventType */}
-              {eventType === 'Boda' && (
-                <>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
-                        Nombre de la persona 1
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={person1Name}
-                        onChange={e => setPerson1Name(e.target.value)}
-                        placeholder="ej. Lucía"
-                        className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
-                        Nombre de la persona 2
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={person2Name}
-                        onChange={e => setPerson2Name(e.target.value)}
-                        placeholder="ej. Mateo"
-                        className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {eventType === 'Cumpleaños' && (
-                <>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
-                        Nombre del festejado/a
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={person1Name}
-                        onChange={e => setPerson1Name(e.target.value)}
-                        placeholder="ej. Sofía"
-                        className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
-                        Edad a cumplir
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        value={age}
-                        onChange={e => setAge(e.target.value)}
-                        placeholder="ej. 30"
-                        className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {eventType === 'XV años' && (
-                <div>
-                  <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
-                    Nombre de la quinceañera
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={person1Name}
-                    onChange={e => setPerson1Name(e.target.value)}
-                    placeholder="ej. Valeria"
-                    className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white"
-                  />
-                </div>
-              )}
-
-              {eventType === 'Aniversario' && (
+        {step === 2 && (() => {
+          const config = getEventTypeConfig(eventType)
+          return (
+            <div className="max-w-xl mx-auto bg-white border border-beige/80 rounded-2xl p-8 lg:p-10 shadow-sm">
+              <form onSubmit={handleNextStep2} className="space-y-5">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
-                      Nombre persona 1
+                      {config.fieldLabels.person1Name}
                     </label>
                     <input
                       type="text"
                       required
                       value={person1Name}
                       onChange={e => setPerson1Name(e.target.value)}
-                      placeholder="ej. Carmen"
+                      placeholder="ej. Valentina"
                       className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white"
                     />
                   </div>
-                  <div>
-                    <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
-                      Nombre persona 2
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={person2Name}
-                      onChange={e => setPerson2Name(e.target.value)}
-                      placeholder="ej. Alejandro"
-                      className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white"
-                    />
-                  </div>
-                </div>
-              )}
 
-              {['Baby shower', 'Bautizo', 'Graduación', 'Despedida', 'Otro'].includes(eventType) && (
-                <div>
-                  <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
-                    {eventType === 'Baby shower'
-                      ? 'Nombre del bebé / mamita'
-                      : eventType === 'Bautizo'
-                      ? 'Nombre del bautizado/a'
-                      : eventType === 'Graduación'
-                      ? 'Nombre del graduado/a'
-                      : 'Nombre del anfitrión / evento'}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={person1Name}
-                    onChange={e => setPerson1Name(e.target.value)}
-                    placeholder="ej. Camila"
-                    className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white"
-                  />
-                </div>
-              )}
+                  {config.allowedFields.person2Name && (
+                    <div>
+                      <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
+                        {config.fieldLabels.person2Name || 'Nombre persona 2'}
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={person2Name}
+                        onChange={e => setPerson2Name(e.target.value)}
+                        placeholder="ej. Alejandro"
+                        className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white"
+                      />
+                    </div>
+                  )}
 
-              <div>
-                <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
-                  Fecha del evento
-                </label>
-                <input
-                  type="date"
+                  {config.allowedFields.age && (
+                    <div>
+                      <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
+                        {config.fieldLabels.age || 'Edad a cumplir'}
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        value={age}
+                        onChange={e => setAge(e.target.value)}
+                        placeholder="ej. 15"
+                        className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white"
+                      />
+                    </div>
+                  )}
+
+                  {config.allowedFields.yearsToCelebrate && (
+                    <div>
+                      <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
+                        {config.fieldLabels.yearsToCelebrate || 'Años a celebrar'}
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        value={yearsToCelebrate}
+                        onChange={e => setYearsToCelebrate(e.target.value)}
+                        placeholder="ej. 25"
+                        className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <CustomDatePicker
+                  label="Fecha del evento"
                   required
                   value={date}
-                  onChange={e => setDate(e.target.value)}
-                  className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white"
+                  onChange={setDate}
                 />
-              </div>
 
-              {/* Note */}
-              <div className="pt-2 text-center">
-                <p className="font-body text-xs text-brown/45 italic">
-                  * Puedes cambiar estos datos después en cualquier momento.
-                </p>
-              </div>
+                {/* Note */}
+                <div className="pt-2 text-center">
+                  <p className="font-body text-xs text-brown/45 italic">
+                    * Puedes cambiar estos datos después en cualquier momento.
+                  </p>
+                </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-beige/60">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="font-body text-xs text-brown/60 hover:text-brown px-4 py-2"
-                >
-                  ← Atrás
-                </button>
-                <button
-                  type="submit"
-                  className="bg-brown text-ivory font-body font-medium text-sm px-8 py-3 rounded-full hover:bg-ink transition-all duration-300 shadow-sm cursor-pointer"
-                >
-                  Continuar
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
+                <div className="flex items-center justify-between pt-4 border-t border-beige/60">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="font-body text-xs text-brown/60 hover:text-brown px-4 py-2"
+                  >
+                    ← Atrás
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-brown text-ivory font-body font-medium text-sm px-8 py-3 rounded-full hover:bg-ink transition-all duration-300 shadow-sm cursor-pointer"
+                  >
+                    Continuar
+                  </button>
+                </div>
+              </form>
+            </div>
+          )
+        })()}
 
         {/* ── STEP 3: STYLE PREVIEWS ─────────────────────────────────────────── */}
         {step === 3 && (
@@ -475,6 +405,9 @@ export default function OnboardingView({ initialData, onComplete }: OnboardingVi
                       <img
                         src={st.img}
                         alt={st.style}
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&h=800&fit=crop&auto=format'
+                        }}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-brown/80 via-transparent to-transparent" />

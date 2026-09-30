@@ -41,21 +41,21 @@ export default function SectionRenderer({
     case 'hero':
       return <HeroSection section={section} eventData={eventData} theme={theme} mode={mode} />
     case 'message':
-      return <MessageSection section={section} theme={theme} />
+      return <MessageSection section={section} eventData={eventData} theme={theme} />
     case 'countdown':
       return <CountdownSection section={section} eventData={eventData} />
     case 'dateLocation':
-      return <DateLocationSection section={section} theme={theme} />
+      return <DateLocationSection section={section} eventData={eventData} theme={theme} />
     case 'schedule':
-      return <ScheduleSection section={section} theme={theme} />
+      return <ScheduleSection section={section} eventData={eventData} theme={theme} />
     case 'dressCode':
-      return <DressCodeSection section={section} theme={theme} />
+      return <DressCodeSection section={section} eventData={eventData} theme={theme} />
     case 'gallery':
       return <GallerySection section={section} />
     case 'rsvp':
       return <RsvpSection section={section} theme={theme} onConfirmRsvp={onConfirmRsvp} />
     case 'gifts':
-      return <GiftsSection section={section} theme={theme} />
+      return <GiftsSection section={section} eventData={eventData} theme={theme} />
     case 'lodging':
       return <LodgingSection section={section} theme={theme} />
     case 'playlist':
@@ -63,7 +63,7 @@ export default function SectionRenderer({
     case 'location':
       return <LocationSection section={section} theme={theme} />
     case 'guestbook':
-      return <GuestbookSection section={section} theme={theme} />
+      return <GuestbookSection section={section} eventData={eventData} theme={theme} />
     case 'eventPhotos':
       return <EventPhotosSection section={section} />
     case 'seating':

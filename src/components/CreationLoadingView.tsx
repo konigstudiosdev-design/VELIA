@@ -1,17 +1,35 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 
 interface CreationLoadingViewProps {
-  onCreationComplete: () => void
+  onCreateEvent: () => Promise<void>
+  onProceedToDashboard: () => void
 }
 
 export default function CreationLoadingView({
-  onCreationComplete,
+  onCreateEvent,
+  onProceedToDashboard,
 }: CreationLoadingViewProps) {
   const [stage, setStage] = useState<'loading' | 'ready'>('loading')
   const [progress, setProgress] = useState(0)
+  const [creationDone, setCreationDone] = useState(false)
+  const createdRef = useRef(false)
 
+  // 1. Run creation in background immediately on mount
   useEffect(() => {
-    // Animate progress
+    if (!createdRef.current) {
+      createdRef.current = true
+      onCreateEvent()
+        .then(() => {
+          setCreationDone(true)
+        })
+        .catch(() => {
+          setCreationDone(true)
+        })
+    }
+  }, [onCreateEvent])
+
+  // 2. Animate progress bar smoothly
+  useEffect(() => {
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
@@ -19,15 +37,29 @@ export default function CreationLoadingView({
           setStage('ready')
           return 100
         }
-        return prev + 5
+        return prev + 10
       })
-    }, 110)
+    }, 100)
 
     return () => clearInterval(interval)
   }, [])
 
+  // 3. Auto-navigate to dashboard once ready AND creation is done
+  useEffect(() => {
+    if (stage === 'ready' && creationDone) {
+      const redirectTimer = setTimeout(() => {
+        onProceedToDashboard()
+      }, 700)
+      return () => clearTimeout(redirectTimer)
+    }
+  }, [stage, creationDone, onProceedToDashboard])
+
+  const handleManualProceed = () => {
+    onProceedToDashboard()
+  }
+
   return (
-    <div className="min-h-screen pt-24 pb-20 px-6 bg-ivory flex items-center justify-center">
+    <div className="min-h-screen pt-24 pb-20 px-6 bg-ivory flex items-center justify-center select-none">
       <div className="w-full max-w-md text-center">
         {/* Emblem animation */}
         <div className="relative w-24 h-24 mx-auto mb-8 flex items-center justify-center">
@@ -60,7 +92,11 @@ export default function CreationLoadingView({
             </h1>
 
             <p className="font-body text-xs text-brown/50 mb-8 leading-relaxed max-w-xs mx-auto">
-              Ajustando tipografía, paleta de colores y maquetación editorial personalizada.
+              {progress < 40
+                ? 'Aplicando tipografía y paleta editorial...'
+                : progress < 80
+                ? 'Configurando secciones y mapa del evento...'
+                : 'Finalizando enlace personalizado...'}
             </p>
 
             {/* Progress Bar */}
@@ -85,15 +121,16 @@ export default function CreationLoadingView({
               Tu invitación está lista.
             </h1>
 
-            <p className="font-body text-xs text-brown/60 mb-8 leading-relaxed max-w-xs mx-auto">
-              Tu enlace personalizado ha sido generado y tu panel de control ya se encuentra habilitado.
+            <p className="font-body text-xs text-brown/60 mb-6 leading-relaxed max-w-xs mx-auto">
+              Entrando a tu panel de control...
             </p>
 
             <button
-              onClick={onCreationComplete}
-              className="bg-brown text-ivory font-body font-medium text-sm px-10 py-4 rounded-full hover:bg-ink transition-all duration-300 shadow-md hover:scale-[1.02] cursor-pointer"
+              onClick={handleManualProceed}
+              className="bg-brown text-ivory font-body font-medium text-sm px-10 py-4 rounded-full hover:bg-ink transition-all duration-300 shadow-md hover:scale-[1.02] cursor-pointer flex items-center justify-center gap-2 mx-auto"
             >
-              Personalizar invitación
+              <span>Personalizar invitación</span>
+              <span className="text-xs">→</span>
             </button>
           </div>
         )}

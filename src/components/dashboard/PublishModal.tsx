@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { EventData, EventStatus } from '../../types'
 import { cleanSlug, updateInvitationStatus } from '../../services/eventService'
+import { isOwnerAdminUser } from '../../services/entitlementService'
+import { useAuth } from '../../contexts/AuthContext'
 import ShareInvitation from '../ShareInvitation'
 
 interface PublishModalProps {
@@ -16,9 +18,11 @@ export default function PublishModal({
   onClose,
   onOpenPublicView,
 }: PublishModalProps) {
+  const { user, userProfile } = useAuth()
   const [publishing, setSubmitting] = useState(false)
   const [publishedSuccess, setPublishedSuccess] = useState(eventData.status === 'Published')
 
+  const isOwner = isOwnerAdminUser(user?.email || '', userProfile?.role)
   const slug = cleanSlug(eventData.customSlug)
   const isPublished = eventData.status === 'Published'
 
@@ -66,7 +70,7 @@ export default function PublishModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-ink/75 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-beige text-center relative animate-fade-up space-y-6">
+      <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-beige text-center relative animate-fade-up space-y-6 select-none">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 w-8 h-8 rounded-full bg-ivory flex items-center justify-center text-xs text-brown/60 hover:text-brown cursor-pointer"
@@ -79,9 +83,15 @@ export default function PublishModal({
         </div>
 
         <div>
-          <span className="font-body text-[0.62rem] tracking-[0.25em] text-champagne uppercase block mb-1">
-            Confirmación de Publicación
-          </span>
+          {isOwner ? (
+            <span className="bg-amber-100 text-amber-900 border border-amber-300 font-body text-[0.62rem] font-semibold px-3 py-1 rounded-full uppercase tracking-wider inline-block mb-2">
+              👑 Cuenta Dueño (König) · Publicación Gratuita
+            </span>
+          ) : (
+            <span className="font-body text-[0.62rem] tracking-[0.25em] text-champagne uppercase block mb-1">
+              Confirmación de Publicación
+            </span>
+          )}
           <h3 className="font-display text-2xl sm:text-3xl text-brown font-light">
             ¿Todo listo para publicar?
           </h3>
@@ -108,9 +118,9 @@ export default function PublishModal({
         <button
           onClick={handlePublish}
           disabled={publishing || !allChecklistOk}
-          className="w-full bg-brown text-ivory font-body font-medium text-xs py-3.5 rounded-full hover:bg-ink transition-colors cursor-pointer disabled:opacity-50"
+          className="w-full bg-brown text-ivory font-body font-medium text-xs py-3.5 rounded-full hover:bg-ink transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
         >
-          {publishing ? 'Publicando...' : 'Publicar invitación'}
+          {publishing ? 'Publicando...' : 'Publicar invitación ahora'}
         </button>
       </div>
     </div>

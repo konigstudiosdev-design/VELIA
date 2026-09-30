@@ -7,6 +7,7 @@ interface SidebarProps {
   onSelectTab: (tab: DashboardTab) => void
   eventData: EventData
   onGoToLanding: () => void
+  onOpenSavedInvitations?: () => void
 }
 
 export default function Sidebar({
@@ -14,13 +15,14 @@ export default function Sidebar({
   onSelectTab,
   eventData,
   onGoToLanding,
+  onOpenSavedInvitations,
 }: SidebarProps) {
   const { userProfile, user, logout } = useAuth()
 
   const title =
     eventData.person2Name
       ? `${eventData.person1Name} & ${eventData.person2Name}`
-      : eventData.person1Name || 'Lucía & Mateo'
+      : eventData.person1Name || 'Mi Evento'
 
   const userName = userProfile?.name || user?.displayName || 'Usuario VÉLIA'
   const userEmail = userProfile?.email || user?.email || 'usuario@velia.mx'
@@ -61,7 +63,7 @@ export default function Sidebar({
       {/* Brand & Event Switcher */}
       <div className="p-6 border-b border-ivory/10">
         <button
-          onClick={onGoToLanding}
+          onClick={() => onSelectTab('inicio')}
           className="text-left block w-full group cursor-pointer"
         >
           <span className="font-display text-2xl tracking-[0.28em] text-ivory font-light group-hover:text-champagne transition-colors">
@@ -80,6 +82,17 @@ export default function Sidebar({
           </div>
           <span className="w-2 h-2 rounded-full bg-emerald-400 flex-none" />
         </div>
+
+        {onOpenSavedInvitations && (
+          <button
+            type="button"
+            onClick={onOpenSavedInvitations}
+            className="mt-3 w-full bg-champagne/20 hover:bg-champagne/30 text-ivory font-body text-[0.65rem] tracking-wider uppercase py-2 px-3 rounded-lg border border-champagne/30 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <span>📂</span>
+            <span>Mis Invitaciones</span>
+          </button>
+        )}
       </div>
 
       {/* Main Navigation */}

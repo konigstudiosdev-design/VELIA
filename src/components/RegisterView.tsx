@@ -57,31 +57,31 @@ export default function RegisterView({ onNavigate, onRegisterSuccess }: Register
   }
 
   return (
-    <div className="min-h-screen pt-28 pb-16 flex items-center justify-center px-6 bg-ivory">
-      <div className="w-full max-w-md">
-        <div className="bg-white border border-beige/80 rounded-2xl p-8 lg:p-10 shadow-sm relative">
-          <div className="text-center mb-8">
-            <span className="font-display text-2xl tracking-[0.3em] text-brown font-light block mb-2">
+    <div className="h-screen pt-16 lg:pt-20 flex items-center justify-center px-4 bg-ivory overflow-hidden">
+      <div className="w-full max-w-md my-auto">
+        <div className="bg-white border border-beige/80 rounded-2xl p-6 sm:p-7 shadow-sm relative">
+          <div className="text-center mb-4">
+            <span className="font-display text-xl tracking-[0.3em] text-brown font-light block mb-1">
               VÉLIA
             </span>
-            <div className="w-8 h-[0.5px] bg-champagne mx-auto mb-4" />
-            <h1 className="font-display text-3xl lg:text-[2.2rem] text-brown font-light leading-tight">
+            <div className="w-6 h-[0.5px] bg-champagne mx-auto mb-2" />
+            <h1 className="font-display text-2xl lg:text-[1.8rem] text-brown font-light leading-tight">
               Comencemos a crear algo especial.
             </h1>
-            <p className="font-body text-xs text-brown/50 mt-2">
+            <p className="font-body text-xs text-brown/50 mt-1">
               Crea tu cuenta en menos de un minuto.
             </p>
           </div>
 
           {error && (
-            <div className="mb-6 p-3 rounded bg-rose/15 border border-rose/30 text-brown text-xs font-body text-center">
+            <div className="mb-3 p-2.5 rounded bg-rose/15 border border-rose/30 text-brown text-xs font-body text-center leading-tight">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
+              <label className="block font-body text-[0.68rem] tracking-[0.12em] text-brown/65 uppercase mb-1">
                 Nombre completo
               </label>
               <input
@@ -90,12 +90,12 @@ export default function RegisterView({ onNavigate, onRegisterSuccess }: Register
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="Lucía Fernández"
-                className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white transition-all duration-200"
+                className="w-full px-3.5 py-2 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white transition-all duration-200"
               />
             </div>
 
             <div>
-              <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
+              <label className="block font-body text-[0.68rem] tracking-[0.12em] text-brown/65 uppercase mb-1">
                 Correo electrónico
               </label>
               <input
@@ -104,12 +104,12 @@ export default function RegisterView({ onNavigate, onRegisterSuccess }: Register
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="tu@correo.com"
-                className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white transition-all duration-200"
+                className="w-full px-3.5 py-2 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white transition-all duration-200"
               />
             </div>
 
             <div>
-              <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-1.5">
+              <label className="block font-body text-[0.68rem] tracking-[0.12em] text-brown/65 uppercase mb-1">
                 Contraseña
               </label>
               <input
@@ -118,19 +118,19 @@ export default function RegisterView({ onNavigate, onRegisterSuccess }: Register
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="Mínimo 6 caracteres"
-                className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white transition-all duration-200"
+                className="w-full px-3.5 py-2 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white transition-all duration-200"
               />
             </div>
 
-            <div className="pt-2">
-              <label className="flex items-start gap-3 cursor-pointer select-none">
+            <div className="pt-1">
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={acceptTerms}
                   onChange={e => setAcceptTerms(e.target.checked)}
                   className="mt-0.5 rounded border-beige text-champagne focus:ring-champagne accent-brown"
                 />
-                <span className="font-body text-xs text-brown/60 leading-relaxed">
+                <span className="font-body text-[0.72rem] text-brown/60 leading-tight">
                   Acepto los términos y condiciones y la política de privacidad.
                 </span>
               </label>
@@ -139,18 +139,18 @@ export default function RegisterView({ onNavigate, onRegisterSuccess }: Register
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-brown text-ivory font-body font-medium text-sm py-3.5 rounded-full hover:bg-ink transition-all duration-300 shadow-sm hover:scale-[1.01] cursor-pointer mt-2 disabled:opacity-50"
+              className="w-full bg-brown text-ivory font-body font-medium text-sm py-2.5 rounded-full hover:bg-ink transition-all duration-300 shadow-sm hover:scale-[1.01] cursor-pointer mt-1 disabled:opacity-50"
             >
               {submitting ? 'Creando cuenta...' : 'Crear cuenta'}
             </button>
           </form>
 
           {/* Separator */}
-          <div className="relative my-6 text-center">
+          <div className="relative my-3 text-center">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-beige/80" />
             </div>
-            <span className="relative bg-white px-4 font-body text-xs text-brown/40 uppercase tracking-widest">
+            <span className="relative bg-white px-3 font-body text-[0.68rem] text-brown/40 uppercase tracking-widest">
               o continúa con
             </span>
           </div>
@@ -160,7 +160,7 @@ export default function RegisterView({ onNavigate, onRegisterSuccess }: Register
             type="button"
             onClick={handleGoogleRegister}
             disabled={submitting}
-            className="w-full bg-white border border-beige/90 text-brown font-body text-sm font-medium py-3 rounded-full hover:bg-ivory/80 transition-colors flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
+            className="w-full bg-white border border-beige/90 text-brown font-body text-sm font-medium py-2 rounded-full hover:bg-ivory/80 transition-colors flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
@@ -184,7 +184,7 @@ export default function RegisterView({ onNavigate, onRegisterSuccess }: Register
           </button>
 
           {/* Login prompt */}
-          <div className="mt-8 text-center pt-6 border-t border-beige/60">
+          <div className="mt-4 text-center pt-3 border-t border-beige/60">
             <p className="font-body text-xs text-brown/60">
               ¿Ya tienes cuenta?{' '}
               <button

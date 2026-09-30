@@ -18,6 +18,9 @@ import PwaInstallPrompt from './components/PwaInstallPrompt'
 import ToastContainer, { ToastMessage } from './components/Toast'
 import PaymentStatus from './components/billing/PaymentStatus'
 import HowItWorksModal from './components/HowItWorksModal'
+import PartnerOnboardingView from './components/partner/PartnerOnboardingView'
+import PartnerDashboardView from './components/partner/PartnerDashboardView'
+import AdminDashboardView from './components/admin/AdminDashboardView'
 
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import {
@@ -30,7 +33,14 @@ import {
   incrementInvitationViews,
   updateEventData as saveEventDataToFirestore,
 } from './services/eventService'
+import {
+  saveReferralAttribution,
+  getStoredAttribution,
+  getPartnerBySlugOrCode,
+  processPartnerSale,
+} from './services/partnerService'
 import { updateSeoMetaData } from './utils/seo'
+import { getEventDataDraft, saveEventDataDraft } from './utils/draftStorage'
 
 // ─── Scroll Reveal ────────────────────────────────────────────────────────────
 function useReveal(threshold = 0.1) {
@@ -72,138 +82,206 @@ function Reveal({ children, delay = 0, className = '' }: RevealProps) {
 }
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
-function HeroSection({ onStartCreate }: { onStartCreate: () => void }) {
+function HeroSection({ onStartCreate, onNavigate }: { onStartCreate: () => void; onNavigate: (view: AppView) => void }) {
+  const [heroTab, setHeroTab] = useState<'boda' | 'xv' | 'cumple'>('boda')
+
+  const sampleData = {
+    boda: {
+      subtitle: 'NUESTRA BODA',
+      person1: 'Lucía',
+      amp: '&',
+      person2: 'Mateo',
+      date: '18 · 09 · 2027',
+      location: 'Hacienda San José · CDMX',
+      badge: '💍 Bodas',
+    },
+    xv: {
+      subtitle: 'MIS XV AÑOS',
+      person1: 'Fernanda',
+      amp: '',
+      person2: 'Torres',
+      date: '12 · 12 · 2026',
+      location: 'Jardín Real · Guadalajara',
+      badge: '👑 XV Años',
+    },
+    cumple: {
+      subtitle: 'MI CUMPLEAÑOS',
+      person1: 'Carlos',
+      amp: '',
+      person2: 'Festejo',
+      date: '05 · 11 · 2026',
+      location: 'Lounge Bar · Monterrey',
+      badge: '🎂 Cumpleaños',
+    },
+  }[heroTab]
+
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-ink">
-      {/* Background */}
-      <div className="absolute inset-0">
+    <section className="relative min-h-screen flex items-center overflow-hidden bg-ink select-none">
+      {/* Background Image with Vignette Overlay */}
+      <div className="absolute inset-0 z-0">
         <img
-          src="https://images.unsplash.com/photo-1763553113391-a659bee36e06?w=1800&h=1200&fit=crop&auto=format"
-          alt="Elegante recepción de boda"
-          className="w-full h-full object-cover"
-          style={{ animation: 'heroImgReveal 1.6s ease-out forwards' }}
+          src="https://images.unsplash.com/photo-1519741497674-611481863552?w=1800&h=1200&fit=crop&auto=format"
+          alt="Elegante evento social VÉLIA"
+          className="w-full h-full object-cover scale-105"
+          style={{ animation: 'heroImgReveal 2s ease-out forwards' }}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-ink/92 via-ink/65 to-ink/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-ink/95 via-ink/80 to-ink/40" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(200,169,130,0.15),transparent_60%)] pointer-events-none" />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-12 pt-16">
-        <div className="grid lg:grid-cols-[1fr_420px] gap-12 lg:gap-20 items-center min-h-screen py-28 lg:py-0">
+      {/* Main Container */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-12 pt-20 pb-16">
+        <div className="grid lg:grid-cols-[1fr_400px] gap-12 lg:gap-16 items-center min-h-[calc(100vh-5rem)]">
 
-          {/* Text */}
-          <div>
-            <div style={{ animation: 'fadeUp 0.9s ease-out 0.3s both' }}>
-              <span className="font-body text-[0.65rem] tracking-[0.38em] text-champagne uppercase">
-                Invitaciones digitales premium
+          {/* Left Text Column */}
+          <div className="space-y-6">
+            <div style={{ animation: 'fadeUp 0.9s ease-out 0.2s both' }}>
+              <span className="inline-flex items-center gap-2 bg-champagne/15 border border-champagne/40 backdrop-blur-md px-4 py-1.5 rounded-full text-champagne font-body text-[0.68rem] tracking-[0.3em] uppercase font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-champagne animate-ping" />
+                Experiencias Digitales Premium &amp; B2B
               </span>
             </div>
+
             <h1
-              className="font-display text-[2.8rem] md:text-6xl lg:text-[4.5rem] text-white leading-[1.06] font-light mt-5 mb-7 max-w-2xl"
-              style={{ animation: 'fadeUp 0.9s ease-out 0.5s both' }}
+              className="font-display text-4xl sm:text-6xl lg:text-[4.75rem] text-white leading-[1.05] font-light max-w-2xl"
+              style={{ animation: 'fadeUp 0.9s ease-out 0.4s both' }}
             >
-              Tu historia merece una invitación extraordinaria.
+              Tu historia merece una <span className="italic font-serif text-champagne bg-gradient-to-r from-champagne via-[#e8d2b2] to-champagne bg-clip-text text-transparent">invitación extraordinaria.</span>
             </h1>
+
             <p
-              className="font-body text-white/65 text-base lg:text-[1.0625rem] leading-relaxed max-w-md mb-10"
-              style={{ animation: 'fadeUp 0.9s ease-out 0.7s both' }}
+              className="font-body text-white/75 text-base sm:text-lg leading-relaxed max-w-xl"
+              style={{ animation: 'fadeUp 0.9s ease-out 0.6s both' }}
             >
-              Diseña, personaliza y comparte una invitación digital que se sienta tan especial como tu evento.
+              Diseña una invitación digital elegante con pases personalizados para WhatsApp, itinerario interactivo, mesa de regalos y mapa. O gestiona los eventos de tus clientes como profesional.
             </p>
+
+            {/* CTAs */}
             <div
-              className="flex flex-wrap gap-4"
-              style={{ animation: 'fadeUp 0.9s ease-out 0.9s both' }}
+              className="flex flex-wrap items-center gap-4 pt-2"
+              style={{ animation: 'fadeUp 0.9s ease-out 0.8s both' }}
             >
               <button
                 onClick={onStartCreate}
-                className="font-body font-medium bg-champagne text-brown px-8 py-3.5 rounded-full text-sm hover:bg-[#d4b990] transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+                className="font-body font-medium bg-champagne hover:bg-[#d4b990] text-brown px-9 py-4 rounded-full text-sm transition-all duration-300 hover:scale-[1.03] cursor-pointer shadow-lg hover:shadow-champagne/20 flex items-center gap-2"
               >
-                Crear mi invitación
+                <span>✨</span>
+                <span>Crear mi evento</span>
               </button>
-              <a
-                href="#Plantillas"
-                className="font-body font-medium text-white border border-white/25 px-8 py-3.5 rounded-full text-sm hover:border-white/50 transition-all duration-300"
+
+              <button
+                onClick={() => onNavigate('partner_onboarding')}
+                className="font-body font-medium text-white border border-white/30 hover:border-champagne hover:bg-white/5 px-8 py-4 rounded-full text-sm transition-all duration-300 cursor-pointer flex items-center gap-2"
               >
-                Explorar diseños
-              </a>
+                <span>🥂</span>
+                <span>Soy Wedding Planner</span>
+              </button>
             </div>
 
-            {/* Social proof */}
+            {/* Feature Highlights Pills */}
             <div
-              className="flex items-center gap-6 mt-14 pt-10 border-t border-white/10"
-              style={{ animation: 'fadeUp 0.9s ease-out 1.1s both' }}
+              className="flex flex-wrap items-center gap-4 text-xs font-body text-white/60 pt-2"
+              style={{ animation: 'fadeUp 0.9s ease-out 0.9s both' }}
+            >
+              <span className="flex items-center gap-1.5">
+                <span className="text-champagne font-bold">✓</span> RSVP por WhatsApp
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-champagne font-bold">✓</span> Mesa de Regalos CLABE
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="text-champagne font-bold">✓</span> Publicación Inmediata
+              </span>
+            </div>
+
+            {/* Metrics Bar */}
+            <div
+              className="grid grid-cols-3 gap-6 pt-8 border-t border-white/10 max-w-lg"
+              style={{ animation: 'fadeUp 0.9s ease-out 1s both' }}
             >
               <div>
-                <p className="font-display text-2xl text-white font-light">+2,400</p>
-                <p className="font-body text-[0.7rem] text-white/40 tracking-wide uppercase mt-0.5">Eventos creados</p>
+                <p className="font-display text-2xl sm:text-3xl text-white font-light">+2,400</p>
+                <p className="font-body text-[0.65rem] text-white/40 tracking-wider uppercase mt-0.5">Eventos creados</p>
               </div>
-              <div className="w-[1px] h-8 bg-white/15" />
               <div>
-                <p className="font-display text-2xl text-white font-light">98%</p>
-                <p className="font-body text-[0.7rem] text-white/40 tracking-wide uppercase mt-0.5">Satisfacción</p>
+                <p className="font-display text-2xl sm:text-3xl text-white font-light">98%</p>
+                <p className="font-body text-[0.65rem] text-white/40 tracking-wider uppercase mt-0.5">Satisfacción</p>
               </div>
-              <div className="w-[1px] h-8 bg-white/15" />
               <div>
-                <p className="font-display text-2xl text-white font-light">7</p>
-                <p className="font-body text-[0.7rem] text-white/40 tracking-wide uppercase mt-0.5">Tipos de evento</p>
+                <p className="font-display text-2xl sm:text-3xl text-white font-light">9</p>
+                <p className="font-body text-[0.65rem] text-white/40 tracking-wider uppercase mt-0.5">Ocasiones</p>
               </div>
             </div>
           </div>
 
-          {/* Invitation card mockup */}
+          {/* Right Column: Interactive Mockup Card */}
           <div
-            className="hidden lg:flex justify-center items-center"
-            style={{ animation: 'fadeUp 1.1s ease-out 0.9s both' }}
+            className="hidden lg:flex flex-col items-center justify-center"
+            style={{ animation: 'fadeUp 1.1s ease-out 0.8s both' }}
           >
+            {/* Occasion Tabs */}
+            <div className="flex gap-1 p-1 bg-white/10 backdrop-blur-md rounded-full border border-white/15 mb-4 z-10">
+              {(['boda', 'xv', 'cumple'] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setHeroTab(tab)}
+                  className={`font-body text-[0.68rem] px-3.5 py-1 rounded-full transition-all cursor-pointer ${
+                    heroTab === tab
+                      ? 'bg-champagne text-brown font-semibold shadow-xs'
+                      : 'text-white/60 hover:text-white'
+                  }`}
+                >
+                  {tab === 'boda' ? '💍 Boda' : tab === 'xv' ? '👑 XV Años' : '🎂 Cumple'}
+                </button>
+              ))}
+            </div>
+
+            {/* Floating Luxury Card */}
             <div
               className="relative"
-              style={{ animation: 'floatCard 7s ease-in-out 2s infinite' }}
+              style={{ animation: 'floatCard 7s ease-in-out infinite' }}
             >
-              <div className="absolute inset-4 translate-y-6 blur-3xl bg-champagne/20 rounded-sm" />
+              <div className="absolute inset-2 translate-y-8 blur-3xl bg-champagne/30 rounded-3xl" />
 
               <div
-                className="relative bg-white w-[280px] px-10 py-12 text-center"
-                style={{ boxShadow: '0 40px 100px rgba(0,0,0,0.45), 0 8px 24px rgba(0,0,0,0.2)' }}
+                className="relative bg-white w-[300px] px-8 py-10 rounded-2xl text-center border border-beige/60 transition-all duration-500"
+                style={{ boxShadow: '0 40px 100px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.2)' }}
               >
-                <div className="flex items-center gap-3 mb-8">
+                <div className="flex items-center gap-3 mb-6">
                   <div className="h-[0.5px] flex-1 bg-champagne/50" />
-                  <div className="w-1 h-1 rounded-full bg-champagne/70" />
+                  <span className="text-xs">{sampleData.badge}</span>
                   <div className="h-[0.5px] flex-1 bg-champagne/50" />
                 </div>
 
-                <p className="font-body text-[0.6rem] tracking-[0.32em] text-champagne uppercase mb-4 leading-none">
-                  Con alegría te invitamos
+                <p className="font-body text-[0.6rem] tracking-[0.32em] text-champagne uppercase mb-3 leading-none">
+                  {sampleData.subtitle}
                 </p>
 
-                <h2 className="font-display text-[2.4rem] text-brown font-light leading-none mb-[2px]">
-                  Lucía
+                <h2 className="font-display text-[2.5rem] text-brown font-light leading-none mb-[2px]">
+                  {sampleData.person1}
                 </h2>
-                <p className="font-display text-lg text-brown/30 font-light tracking-[0.15em]">&amp;</p>
-                <h2 className="font-display text-[2.4rem] text-brown font-light leading-none mb-9">
-                  Mateo
+                {sampleData.amp && (
+                  <p className="font-display text-base text-brown/30 font-light tracking-[0.15em]">&amp;</p>
+                )}
+                <h2 className="font-display text-[2.5rem] text-brown font-light leading-none mb-8">
+                  {sampleData.person2}
                 </h2>
 
-                <div className="h-[0.5px] bg-beige mb-7" />
+                <div className="h-[0.5px] bg-beige mb-6" />
 
-                <p className="font-body text-[0.6rem] tracking-[0.28em] text-brown/45 uppercase mb-1">Sábado</p>
-                <p className="font-display text-xl text-brown font-light tracking-[0.12em] mb-1">
-                  18 · 09 · 2027
+                <p className="font-display text-lg text-brown font-light tracking-[0.12em] mb-0.5">
+                  {sampleData.date}
                 </p>
-                <p className="font-body text-[0.58rem] tracking-[0.2em] text-brown/40 uppercase mb-8">
-                  Villa Escondida · CDMX
+                <p className="font-body text-[0.58rem] tracking-[0.2em] text-brown/45 uppercase mb-8">
+                  {sampleData.location}
                 </p>
 
                 <button
                   onClick={onStartCreate}
-                  className="font-body text-[0.6rem] tracking-[0.3em] uppercase text-champagne border border-champagne/40 px-5 py-2 hover:bg-champagne/8 transition-colors duration-200 cursor-pointer"
+                  className="w-full font-body text-[0.62rem] tracking-[0.25em] uppercase text-champagne bg-brown hover:bg-ink px-5 py-3 rounded-full transition-all duration-300 cursor-pointer font-medium shadow-sm"
                 >
-                  Confirmar asistencia
+                  Confirmar Asistencia
                 </button>
-
-                <div className="flex items-center gap-3 mt-8">
-                  <div className="h-[0.5px] flex-1 bg-champagne/50" />
-                  <div className="w-1 h-1 rounded-full bg-champagne/70" />
-                  <div className="h-[0.5px] flex-1 bg-champagne/50" />
-                </div>
               </div>
             </div>
           </div>
@@ -735,40 +813,35 @@ function DashboardSection({ onStartCreate }: { onStartCreate: () => void }) {
 // ─── Pricing ──────────────────────────────────────────────────────────────────
 const PLANS = [
   {
-    name: 'Esencial',
-    price: '$399',
+    name: 'Esencial (Básico)',
+    price: '$199',
+    unit: 'MXN · Pago único',
+    tagline: 'Ideal para eventos sencillos con información clara y rápida.',
     featured: false,
     features: [
-      '1 invitación digital',
-      'Plantillas esenciales',
-      'RSVP hasta 50 invitados',
-      'Link personalizado',
+      '1 invitación digital publicada (velia.mx/e/tu-evento)',
+      'Edición básica (Portada, Fecha, Ubicación Google Maps y Mensaje)',
+      'Confirmación de Asistencia RSVP (hasta 50 invitados)',
+      'Código de vestimenta (Dress code)',
+      'Cuenta regresiva animada',
+      'Vigencia de publicación: 60 días',
     ],
   },
   {
-    name: 'Premium',
-    price: '$699',
+    name: 'Signature (Completo)',
+    price: '$499',
+    unit: 'MXN · Pago único',
+    tagline: 'Toda la elegancia y potencia de VÉLIA con personalización total.',
     featured: true,
     features: [
-      '1 invitación premium',
-      'Todas las plantillas',
-      'Invitados ilimitados',
-      'RSVP + mesas + galería',
-      'Mesa de regalos',
-      'Soporte prioritario',
-    ],
-  },
-  {
-    name: 'Signature',
-    price: '$999',
-    featured: false,
-    features: [
-      '3 invitaciones',
-      'Diseño a medida',
-      'Funciones completas',
-      'Mesa de regalos',
-      'WhatsApp personalizado',
-      'Soporte dedicado',
+      '1 invitación premium con personalización total',
+      'Edición e itinerario completo e ilimitado de secciones',
+      'Invitados e pases ilimitados con código QR y token para WhatsApp',
+      'Asignación de Mesas y Asientos (Seating chart interactivo)',
+      'Mesa de regalos completa (CLABE bancaria + Liverpool/Sears)',
+      'Música & Playlist de Spotify + Libro de firmas de invitados',
+      'Estadísticas de visitas y respuestas RSVP en vivo',
+      'Vigencia de publicación: 365 días (1 año completo)',
     ],
   },
 ]
@@ -782,22 +855,22 @@ function PricingSection({ onStartCreate }: { onStartCreate: () => void }) {
           <h2 className="font-display text-4xl lg:text-5xl text-brown font-light mt-3">Elige tu plan</h2>
         </Reveal>
         <Reveal delay={100} className="text-center mb-14 lg:mb-18">
-          <p className="font-body text-brown/45 text-sm tracking-wide">Pago único · Sin mensualidades · Sin sorpresas</p>
+          <p className="font-body text-brown/45 text-sm tracking-wide">Pago único por evento · Sin mensualidades · Acceso completo al panel</p>
         </Reveal>
 
-        <div className="grid md:grid-cols-3 gap-5 items-center">
+        <div className="grid md:grid-cols-2 max-w-4xl mx-auto gap-6 lg:gap-8 items-stretch">
           {PLANS.map((plan, i) => (
             <Reveal key={plan.name} delay={i * 90}>
               <div
-                className={`relative p-8 lg:p-10 transition-transform duration-300 ${
+                className={`relative p-8 lg:p-10 transition-transform duration-300 rounded-3xl flex flex-col justify-between h-full ${
                   plan.featured
-                    ? 'bg-brown text-ivory shadow-2xl md:scale-[1.04]'
-                    : 'bg-ivory border border-beige hover:border-beige/80'
+                    ? 'bg-brown text-ivory shadow-2xl md:scale-[1.03] border-2 border-champagne'
+                    : 'bg-ivory border border-beige hover:border-beige/80 text-brown'
                 }`}
               >
                 {plan.featured && (
-                  <span className="absolute -top-[13px] left-1/2 -translate-x-1/2 font-body text-[0.6rem] tracking-[0.3em] uppercase bg-champagne text-brown px-4 py-1.5 whitespace-nowrap">
-                    Más popular
+                  <span className="absolute -top-[13px] left-1/2 -translate-x-1/2 font-body text-[0.6rem] tracking-[0.3em] uppercase bg-champagne text-brown px-4 py-1.5 whitespace-nowrap rounded-full font-bold shadow-xs">
+                    Opción Más Popular
                   </span>
                 )}
 
@@ -892,6 +965,61 @@ function CTASection({ onStartCreate }: { onStartCreate: () => void }) {
   )
 }
 
+// ─── Partner Landing Section ──────────────────────────────────────────────────
+function PartnerLandingSection({ onNavigate }: { onNavigate: (view: AppView) => void }) {
+  return (
+    <section className="py-24 lg:py-36 bg-gradient-to-br from-brown via-ink to-black text-ivory">
+      <div className="max-w-7xl mx-auto px-6 lg:px-12">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <Reveal>
+            <span className="font-body text-[0.65rem] tracking-[0.38em] text-champagne uppercase font-medium block mb-2">
+              Programa de Profesionales
+            </span>
+            <h2 className="font-display text-4xl lg:text-[3.8rem] text-white font-light leading-tight mb-6">
+              ¿Eres Wedding Planner u Organizador de Eventos?
+            </h2>
+            <p className="font-body text-white/70 text-base leading-relaxed mb-8 max-w-lg">
+              Ofrece invitaciones digitales extraordinarias dentro de tus paquetes y genera comisiones exclusivas de entre el 40% y el 50% por cada proyecto.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={() => onNavigate('partner_onboarding')}
+                className="font-body font-medium bg-champagne text-brown px-8 py-3.5 rounded-full text-sm hover:bg-white transition-all cursor-pointer shadow-sm hover:scale-[1.02]"
+              >
+                Conocer Programa Partners ✨
+              </button>
+            </div>
+          </Reveal>
+
+          <Reveal delay={150}>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="bg-white/10 border border-white/15 rounded-2xl p-6 backdrop-blur-xs">
+                <span className="text-3xl block mb-2">💼</span>
+                <h3 className="font-display text-xl text-white font-medium mb-1">
+                  Panel Exclusivo
+                </h3>
+                <p className="font-body text-xs text-white/65 leading-relaxed">
+                  Administra múltiples clientes, eventos e invitaciones en un solo lugar.
+                </p>
+              </div>
+
+              <div className="bg-white/10 border border-white/15 rounded-2xl p-6 backdrop-blur-xs">
+                <span className="text-3xl block mb-2">💰</span>
+                <h3 className="font-display text-xl text-white font-medium mb-1">
+                  Comisiones SPEI
+                </h3>
+                <p className="font-body text-xs text-white/65 leading-relaxed">
+                  Recibe transferencias bancarias directas por cada contrato realizado.
+                </p>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // ─── Footer ───────────────────────────────────────────────────────────────────
 function Footer({ onNavigate }: { onNavigate: (view: AppView) => void }) {
   return (
@@ -979,19 +1107,28 @@ function AppContent() {
   const [publicGuest, setPublicGuest] = useState<any>(null)
   const [publicNotFound, setPublicNotFound] = useState(false)
 
-  // Event Data State
-  const [eventData, setEventData] = useState<EventData>({
-    eventType: 'Boda',
-    person1Name: 'Lucía',
-    person2Name: 'Mateo',
-    date: '2027-09-18',
-    style: 'Editorial',
-    selectedTemplateId: 'maison',
-    customSlug: 'lucia-y-mateo',
-    status: 'Published',
-    planId: 'free',
-    billingStatus: 'free',
+  // Event Data State with Draft Fallback
+  const [eventData, setEventData] = useState<EventData>(() => {
+    const draft = getEventDataDraft()
+    if (draft && (draft.person1Name || draft.eventType)) return draft
+    return {
+      eventType: 'Boda',
+      person1Name: '',
+      person2Name: '',
+      date: '',
+      style: 'Editorial',
+      selectedTemplateId: 'maison',
+      customSlug: '',
+      status: 'Draft',
+      planId: 'free',
+      billingStatus: 'free',
+    }
   })
+
+  // Auto-save eventData draft whenever modified
+  useEffect(() => {
+    saveEventDataDraft(eventData)
+  }, [eventData])
 
   // Template State
   const [selectedTemplate, setSelectedTemplate] = useState<Template>(TEMPLATES_DATA[0])
@@ -1012,6 +1149,25 @@ function AppContent() {
       }, 2000)
     } else if (paymentParam === 'canceled') {
       setPaymentModalStatus('canceled')
+    }
+
+    // Partner Referral Attribution handling (/p/maria-events or ?ref=MARIA10)
+    let partnerTerm = ''
+    if (pathname.startsWith('/p/')) {
+      partnerTerm = pathname.replace('/p/', '')
+    } else if (searchParams.get('ref')) {
+      partnerTerm = searchParams.get('ref') || ''
+    }
+
+    if (partnerTerm) {
+      getPartnerBySlugOrCode(partnerTerm)
+        .then((partner) => {
+          if (partner && partner.status === 'active') {
+            saveReferralAttribution(partner.partnerId, partner.referralCode, partner.referralSlug)
+            addToast('info', `Te ha recomendado ${partner.businessName}`)
+          }
+        })
+        .catch(err => console.error('Error al verificar partner referido:', err))
     }
 
     let slug = ''
@@ -1070,7 +1226,7 @@ function AppContent() {
     }
   }, [])
 
-  // Auto-load user events when authenticated
+  // Auto-load user events when authenticated and restore progress
   useEffect(() => {
     if (userProfile?.uid) {
       getUserEvents(userProfile.uid)
@@ -1078,10 +1234,16 @@ function AppContent() {
           if (events && events.length > 0) {
             const latest = events[0]
             setEventData(latest)
+            saveEventDataDraft(latest)
             const matchedTpl =
               TEMPLATES_DATA.find(t => t.id === latest.selectedTemplateId) || TEMPLATES_DATA[0]
             setSelectedTemplate(matchedTpl)
             setPreviewTemplate(matchedTpl)
+
+            // Auto-redirect to dashboard if returning logged in user is on landing, login or register view
+            if (currentView === 'landing' || currentView === 'login' || currentView === 'register') {
+              setCurrentView('dashboard')
+            }
           }
         })
         .catch(err => {
@@ -1095,10 +1257,40 @@ function AppContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentView])
 
+  // Auto-redirect if user becomes authenticated while on login/register view
+  useEffect(() => {
+    if (user && (currentView === 'login' || currentView === 'register')) {
+      if (user.email) setUserEmail(user.email)
+      addToast('success', 'Sesión iniciada con éxito')
+
+      const isOwnerAdmin =
+        user.email?.toLowerCase() === 'konigstudios.dev@gmail.com' ||
+        userProfile?.role === 'admin'
+
+      if (isOwnerAdmin) {
+        setCurrentView('admin_dashboard')
+      } else if (userProfile?.role === 'partner') {
+        setCurrentView('partner_dashboard')
+      } else {
+        setCurrentView('onboarding')
+      }
+    }
+  }, [user, currentView, userProfile?.role])
+
   // Handlers
   const handleStartCreate = () => {
+    const isOwnerAdmin =
+      user?.email?.toLowerCase() === 'konigstudios.dev@gmail.com' ||
+      userProfile?.role === 'admin'
+
     if (user) {
-      setCurrentView('onboarding')
+      if (isOwnerAdmin) {
+        setCurrentView('admin_dashboard')
+      } else if (userProfile?.role === 'partner') {
+        setCurrentView('partner_dashboard')
+      } else {
+        setCurrentView('onboarding')
+      }
     } else {
       setCurrentView('register')
     }
@@ -1107,17 +1299,39 @@ function AppContent() {
   const handleLoginSuccess = (email: string) => {
     setUserEmail(email)
     addToast('success', 'Sesión iniciada correctamente')
-    setCurrentView('onboarding')
+
+    const isOwnerAdmin =
+      email.toLowerCase() === 'konigstudios.dev@gmail.com' ||
+      userProfile?.role === 'admin'
+
+    if (isOwnerAdmin) {
+      setCurrentView('admin_dashboard')
+    } else if (userProfile?.role === 'partner') {
+      setCurrentView('partner_dashboard')
+    } else {
+      setCurrentView('onboarding')
+    }
   }
 
   const handleRegisterSuccess = (name: string, email: string) => {
     setUserEmail(email)
     setEventData(prev => ({
       ...prev,
-      person1Name: name || 'Lucía',
+      person1Name: name || '',
     }))
     addToast('success', 'Cuenta creada con éxito')
-    setCurrentView('onboarding')
+
+    const isOwnerAdmin =
+      email.toLowerCase() === 'konigstudios.dev@gmail.com' ||
+      userProfile?.role === 'admin'
+
+    if (isOwnerAdmin) {
+      setCurrentView('admin_dashboard')
+    } else if (userProfile?.role === 'partner') {
+      setCurrentView('partner_dashboard')
+    } else {
+      setCurrentView('onboarding')
+    }
   }
 
   const handleOnboardingComplete = (data: EventData) => {
@@ -1142,19 +1356,32 @@ function AppContent() {
       ...prev,
       selectedTemplateId: template.id,
     }))
-    setCurrentView('creation')
+
+    if (eventData.id || eventData.invitationId) {
+      setCurrentView('dashboard')
+      addToast('success', `Diseño cambiado a ${template.name}`)
+    } else {
+      setCurrentView('creation')
+    }
   }
 
-  const handleCreationComplete = async () => {
+  const handleCreateEventInBackground = async () => {
     if (user?.uid) {
       try {
-        const res = await createEventAndInvitation(user.uid, eventData, selectedTemplate.id)
+        const attr = getStoredAttribution()
+        const dataToSave: EventData = {
+          ...eventData,
+          partnerId: eventData.partnerId || attr?.partnerId || userProfile?.partnerId,
+        }
+
+        const res = await createEventAndInvitation(user.uid, dataToSave, selectedTemplate.id)
         setEventData(prev => ({
           ...prev,
           id: res.eventId,
           invitationId: res.invitationId,
           customSlug: res.slug,
           ownerId: user.uid,
+          partnerId: dataToSave.partnerId,
         }))
         addToast('success', '¡Evento e invitación creados!')
       } catch (err) {
@@ -1162,6 +1389,9 @@ function AppContent() {
         addToast('error', 'Ocurrió un error al guardar tu evento.')
       }
     }
+  }
+
+  const handleProceedToDashboard = () => {
     setCurrentView('dashboard')
   }
 
@@ -1339,17 +1569,62 @@ function AppContent() {
       {/* Main Content Router */}
       <main className="flex-1">
         {currentView === 'landing' && (
-          <>
-            <HeroSection onStartCreate={handleStartCreate} />
-            <CategoriesSection onStartCreate={handleStartCreate} />
-            <HowItWorksSection onOpenHowItWorks={() => setShowHowItWorksModal(true)} />
-            <EditorSection onOpenHowItWorks={() => setShowHowItWorksModal(true)} />
-            <FeaturesSection />
-            <TemplatesSection onExploreDesigns={() => setCurrentView('templates')} />
-            <DashboardSection onStartCreate={handleStartCreate} />
-            <PricingSection onStartCreate={handleStartCreate} />
-            <CTASection onStartCreate={handleStartCreate} />
-          </>
+          <div className="relative">
+            {/* 1. Hero */}
+            <div>
+              <HeroSection onStartCreate={handleStartCreate} onNavigate={setCurrentView} />
+            </div>
+
+            {/* 2. Categories */}
+            <div className="bg-ivory border-t border-beige/60">
+              <CategoriesSection onStartCreate={handleStartCreate} />
+            </div>
+
+            {/* 3. How It Works */}
+            <div className="bg-white border-t border-beige/60">
+              <HowItWorksSection onOpenHowItWorks={() => setShowHowItWorksModal(true)} />
+            </div>
+
+            {/* 4. Editor Preview */}
+            <div className="bg-ivory border-t border-beige/60">
+              <EditorSection onOpenHowItWorks={() => setShowHowItWorksModal(true)} />
+            </div>
+
+            {/* 5. Features */}
+            <div className="bg-brown text-ivory border-t border-ivory/15">
+              <FeaturesSection />
+            </div>
+
+            {/* 6. Templates */}
+            <div className="bg-white border-t border-beige/60">
+              <TemplatesSection onExploreDesigns={() => setCurrentView('templates')} />
+            </div>
+
+            {/* 7. Dashboard Control */}
+            <div className="bg-ivory border-t border-beige/60">
+              <DashboardSection onStartCreate={handleStartCreate} />
+            </div>
+
+            {/* 8. Pricing */}
+            <div className="bg-white border-t border-beige/60">
+              <PricingSection onStartCreate={handleStartCreate} />
+            </div>
+
+            {/* 9. Partner Program */}
+            <div className="bg-gradient-to-br from-brown via-ink to-black text-ivory border-t border-champagne/30">
+              <PartnerLandingSection onNavigate={setCurrentView} />
+            </div>
+
+            {/* 10. CTA Final */}
+            <div className="bg-ink border-t border-white/10">
+              <CTASection onStartCreate={handleStartCreate} />
+            </div>
+
+            {/* 11. Footer */}
+            <div className="bg-brown border-t border-ivory/10">
+              <Footer onNavigate={setCurrentView} />
+            </div>
+          </div>
         )}
 
         {currentView === 'login' && (
@@ -1387,7 +1662,13 @@ function AppContent() {
             initialStyle={eventData.style}
             onSelectTemplate={handleSelectTemplate}
             onPreviewTemplate={handlePreviewTemplate}
-            onBackToSummary={() => setCurrentView('summary')}
+            onBackToSummary={() => {
+              if (eventData.id || eventData.invitationId) {
+                setCurrentView('dashboard')
+              } else {
+                setCurrentView('summary')
+              }
+            }}
           />
         )}
 
@@ -1396,14 +1677,21 @@ function AppContent() {
             template={previewTemplate}
             eventData={eventData}
             onBackToGallery={() => setCurrentView('templates')}
-            onEditData={() => setCurrentView('onboarding')}
+            onEditData={() => {
+              if (eventData.id || eventData.invitationId) {
+                setCurrentView('dashboard')
+              } else {
+                setCurrentView('onboarding')
+              }
+            }}
             onConfirmUseTemplate={handleConfirmUseTemplate}
           />
         )}
 
         {currentView === 'creation' && (
           <CreationLoadingView
-            onCreationComplete={handleCreationComplete}
+            onCreateEvent={handleCreateEventInBackground}
+            onProceedToDashboard={handleProceedToDashboard}
           />
         )}
 
@@ -1419,10 +1707,34 @@ function AppContent() {
             onGoToLanding={() => setCurrentView('landing')}
           />
         )}
-      </main>
 
-      {/* Shared Footer on Landing View */}
-      {currentView === 'landing' && <Footer onNavigate={setCurrentView} />}
+        {currentView === 'partner_onboarding' && (
+          <PartnerOnboardingView
+            onNavigate={setCurrentView}
+            onSuccess={() => setCurrentView('partner_dashboard')}
+          />
+        )}
+
+        {currentView === 'partner_dashboard' && (
+          <PartnerDashboardView
+            onNavigate={setCurrentView}
+            onSelectEventToEdit={(evt) => {
+              setEventData(evt)
+              setCurrentView('dashboard')
+            }}
+          />
+        )}
+
+        {currentView === 'admin_dashboard' && (
+          <AdminDashboardView
+            onNavigate={setCurrentView}
+            onSelectEventToEdit={(evt) => {
+              setEventData(evt)
+              setCurrentView('dashboard')
+            }}
+          />
+        )}
+      </main>
 
       {/* Floating PWA Install Prompt, Payment Status, How It Works Modal & Toast Container */}
       <PwaInstallPrompt />

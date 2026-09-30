@@ -91,12 +91,12 @@ export default function PublicInvitationExperience({
 
       {/* Personal Guest Token Welcome Banner */}
       {activeGuest && (
-        <div className="bg-brown text-ivory px-6 py-4 border-b border-champagne/30 text-center relative z-40">
+        <div className="bg-brown text-ivory px-4 sm:px-6 py-3.5 sm:py-4 border-b border-champagne/30 text-center relative z-40">
           <div className="max-w-2xl mx-auto space-y-1">
-            <span className="font-body text-[0.62rem] tracking-[0.25em] text-champagne uppercase block">
+            <span className="font-body text-[0.6rem] sm:text-[0.62rem] tracking-[0.2em] sm:tracking-[0.25em] text-champagne uppercase block">
               Invitación Personalizada
             </span>
-            <p className="font-display text-lg font-light text-white">
+            <p className="font-display text-base sm:text-lg font-light text-white">
               ¡Hola <span className="font-semibold text-champagne">{activeGuest.guestName}</span>!
             </p>
             <p className="font-body text-xs text-white/70">
@@ -117,8 +117,8 @@ export default function PublicInvitationExperience({
 
       {/* Personal Token Interactive RSVP Bar */}
       {activeGuest && eventData.invitationId && (
-        <div className="fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-t border-beige shadow-2xl p-4 sm:p-6">
-          <div className="max-w-xl mx-auto space-y-4">
+        <div className="fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-t border-beige shadow-2xl p-4 sm:p-6 max-h-[85vh] overflow-y-auto">
+          <div className="max-w-xl mx-auto space-y-3 sm:space-y-4">
             {submitted ? (
               <div className="text-center p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl">
                 <p className="font-body text-xs font-semibold">
@@ -127,12 +127,12 @@ export default function PublicInvitationExperience({
               </div>
             ) : (
               <>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <span className="font-body text-[0.6rem] tracking-[0.2em] text-champagne uppercase block">
+                    <span className="font-body text-[0.58rem] sm:text-[0.6rem] tracking-[0.2em] text-champagne uppercase block">
                       Confirmación de Asistencia
                     </span>
-                    <p className="font-display text-base text-brown font-light">
+                    <p className="font-display text-sm sm:text-base text-brown font-light">
                       {activeGuest.guestName} ({activeGuest.passes} pases disponibles)
                     </p>
                   </div>
@@ -165,7 +165,7 @@ export default function PublicInvitationExperience({
 
                 <form onSubmit={handlePersonalRsvpSubmit} className="space-y-3 pt-1">
                   {rsvpStatus === 'Confirmado' && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block font-body text-[0.62rem] text-brown/60 uppercase mb-1">
                           Pases a utilizar
@@ -173,7 +173,7 @@ export default function PublicInvitationExperience({
                         <select
                           value={confirmedCount}
                           onChange={e => setConfirmedCount(Number(e.target.value))}
-                          className="w-full px-3 py-1.5 bg-ivory border border-beige/80 rounded-xl text-xs text-brown font-body focus:outline-none"
+                          className="w-full px-3 py-2 bg-ivory border border-beige/80 rounded-xl text-xs text-brown font-body focus:outline-none"
                         >
                           {Array.from({ length: activeGuest.passes }, (_, i) => i + 1).map(num => (
                             <option key={num} value={num}>
@@ -192,7 +192,7 @@ export default function PublicInvitationExperience({
                           placeholder="ej. Vegetariano, Ninguna"
                           value={dietary}
                           onChange={e => setDietary(e.target.value)}
-                          className="w-full px-3 py-1.5 bg-ivory border border-beige/80 rounded-xl text-xs text-brown font-body focus:outline-none"
+                          className="w-full px-3 py-2 bg-ivory border border-beige/80 rounded-xl text-xs text-brown font-body focus:outline-none"
                         />
                       </div>
                     </div>
@@ -201,7 +201,7 @@ export default function PublicInvitationExperience({
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full bg-brown text-ivory font-body text-xs font-medium py-2.5 rounded-full hover:bg-ink transition-colors cursor-pointer disabled:opacity-50"
+                    className="w-full bg-brown text-ivory font-body text-xs font-medium py-3 rounded-full hover:bg-ink transition-colors cursor-pointer disabled:opacity-50"
                   >
                     {submitting ? 'Guardando respuesta...' : 'Enviar Respuesta RSVP'}
                   </button>

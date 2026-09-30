@@ -1,4 +1,5 @@
 import { InvitationSection, TemplateDefinition, InvitationTheme } from '../types'
+import { getEventTypeConfig } from '../config/eventTypeConfig'
 
 export const DEFAULT_THEME: InvitationTheme = {
   primaryColor: '#332B27',
@@ -14,10 +15,14 @@ export const DEFAULT_THEME: InvitationTheme = {
 }
 
 export function getDefaultSections(eventData?: any): InvitationSection[] {
-  const p1 = eventData?.person1Name || 'Lucía'
-  const p2 = eventData?.person2Name || 'Mateo'
-  const names = p2 ? `${p1} & ${p2}` : p1
-  const date = eventData?.date || '2027-09-18'
+  const config = getEventTypeConfig(eventData?.eventType)
+
+  const p1 = eventData?.person1Name || ''
+  const p2 = config.allowedFields.person2Name ? (eventData?.person2Name || '') : ''
+  const names = p2 ? `${p1} & ${p2}` : (p1 || `Mi ${config.displayName}`)
+  const date = eventData?.date || ''
+
+  const defaults = config.defaultSectionContents
 
   return [
     {
@@ -27,10 +32,10 @@ export function getDefaultSections(eventData?: any): InvitationSection[] {
       enabled: true,
       content: {
         title: names,
-        subtitle: 'Nos casamos',
-        tagline: 'Con la bendición de nuestros padres e hijos',
+        subtitle: defaults.hero.subtitle,
+        tagline: defaults.hero.tagline,
         date,
-        location: eventData?.location || 'Villa Escondida · CDMX',
+        location: eventData?.location || defaults.hero.locationDefault,
         imageUrl: 'https://images.unsplash.com/photo-1763553113391-a659bee36e06?w=1200&h=1600&fit=crop&auto=format',
       },
       settings: {
@@ -45,8 +50,8 @@ export function getDefaultSections(eventData?: any): InvitationSection[] {
       order: 1,
       enabled: true,
       content: {
-        title: 'Nuestra Historia',
-        text: 'Hay momentos en la vida que son especiales por sí solos, pero compartirlos con las personas que más queremos los hace inolvidables. Queremos que seas parte de este día tan importante para nosotros.',
+        title: defaults.message.title,
+        text: defaults.message.text,
       },
       settings: {
         fontItalic: true,
@@ -59,8 +64,8 @@ export function getDefaultSections(eventData?: any): InvitationSection[] {
       order: 2,
       enabled: true,
       content: {
-        title: 'Faltan muy pocos días',
-        targetDate: `${date}T16:00:00`,
+        title: defaults.countdown.title,
+        targetDate: date ? `${date}T16:00:00` : '',
       },
       settings: {
         style: 'cards',
@@ -73,14 +78,14 @@ export function getDefaultSections(eventData?: any): InvitationSection[] {
       enabled: true,
       content: {
         title: 'Cuándo & Dónde',
-        ceremonyTitle: 'Ceremonia Religiosa',
+        ceremonyTitle: defaults.dateLocation.ceremonyTitle,
         ceremonyTime: '16:00 HRS',
-        ceremonyPlace: 'Parroquia de San José',
-        ceremonyAddress: 'Av. Revolución 120, CDMX',
-        receptionTitle: 'Recepción & Fiesta',
+        ceremonyPlace: defaults.dateLocation.ceremonyPlace,
+        ceremonyAddress: 'Av. Principal 120, CDMX',
+        receptionTitle: defaults.dateLocation.receptionTitle,
         receptionTime: '18:30 HRS',
-        receptionPlace: 'Hacienda Villa Escondida',
-        receptionAddress: 'Carretera Libre a Toluca Km 24',
+        receptionPlace: defaults.dateLocation.receptionPlace,
+        receptionAddress: 'Carretera Principal Km 24',
       },
       settings: {
         showMapButton: true,
@@ -92,13 +97,8 @@ export function getDefaultSections(eventData?: any): InvitationSection[] {
       order: 4,
       enabled: true,
       content: {
-        title: 'Itinerario del Evento',
-        items: [
-          { time: '16:00 HRS', title: 'Misa de Acción de Gracias', desc: 'Parroquia de San José' },
-          { time: '18:00 HRS', title: 'Cóctel de Bienvenida', desc: 'Jardín Principal de la Hacienda' },
-          { time: '19:30 HRS', title: 'Cena & Brindis', desc: 'Gran Salón' },
-          { time: '21:00 HRS', title: 'Apertura de Pista', desc: 'Música en vivo y baile' },
-        ],
+        title: defaults.schedule.title,
+        items: defaults.schedule.items,
       },
       settings: {},
     },
@@ -108,10 +108,10 @@ export function getDefaultSections(eventData?: any): InvitationSection[] {
       order: 5,
       enabled: true,
       content: {
-        title: 'Código de Vestimenta',
-        code: 'Rigurosa Etiqueta / Formal',
-        description: 'Mujeres: Vestido largo elegante · Hombres: Esmoquin o Traje oscuro.',
-        colorNote: 'Agradecemos evitar tonos blancos, marfil y beige reservados para la novia.',
+        title: defaults.dressCode.title,
+        code: defaults.dressCode.code,
+        description: defaults.dressCode.description,
+        colorNote: defaults.dressCode.colorNote || '',
       },
       settings: {},
     },
@@ -140,8 +140,8 @@ export function getDefaultSections(eventData?: any): InvitationSection[] {
       enabled: true,
       content: {
         title: 'Confirmación de Asistencia',
-        subtitle: 'Por favor confirma tu presencia antes del 1 de Agosto de 2027',
-        deadline: '2027-08-01',
+        subtitle: 'Por favor confirma tu presencia antes del gran evento',
+        deadline: '',
       },
       settings: {
         requireDietary: true,
@@ -153,8 +153,8 @@ export function getDefaultSections(eventData?: any): InvitationSection[] {
       order: 8,
       enabled: true,
       content: {
-        title: 'Mesa de Regalos',
-        subtitle: 'Tu presencia es nuestro mejor regalo. Si deseas realizarnos un obsequio, ponemos a tu disposición:',
+        title: defaults.gifts.title,
+        subtitle: defaults.gifts.subtitle,
         clabe: '012180015488921102',
         bank: 'BBVA Bancomer',
         beneficiary: names,
@@ -170,8 +170,7 @@ export function getDefaultSections(eventData?: any): InvitationSection[] {
       content: {
         title: 'Hospedaje Recomendado',
         hotels: [
-          { name: 'Hotel Boutique Quinta Real', code: 'BODA-LUCIA-MATEO', discount: '15% Descuento', phone: '+52 55 1234 5678' },
-          { name: 'Hotel Camino Real CDMX', code: 'VELIA2027', discount: 'Tarifa preferencial', phone: '+52 55 8765 4321' },
+          { name: 'Hotel Recomendado', code: 'CODIGO-DESCUENTO', discount: 'Tarifa preferencial', phone: '' },
         ],
       },
       settings: {},
@@ -195,7 +194,7 @@ export function getDefaultSections(eventData?: any): InvitationSection[] {
       enabled: true,
       content: {
         title: 'Ubicación & Mapa',
-        address: 'Hacienda Villa Escondida · Carretera Libre a Toluca Km 24',
+        address: eventData?.location || defaults.hero.locationDefault,
         mapUrl: 'https://maps.google.com',
       },
       settings: {},
@@ -206,8 +205,8 @@ export function getDefaultSections(eventData?: any): InvitationSection[] {
       order: 12,
       enabled: true,
       content: {
-        title: 'Libro de Firmas & Deseos',
-        subtitle: 'Déjanos un mensaje con tus buenos deseos para esta nueva etapa.',
+        title: defaults.guestbook.title,
+        subtitle: defaults.guestbook.subtitle,
       },
       settings: {},
     },

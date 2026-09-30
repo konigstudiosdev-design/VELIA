@@ -24,27 +24,27 @@ export default function RsvpSection({ section, theme, onConfirmRsvp }: SectionPr
   }
 
   return (
-    <div className="py-20 px-6 max-w-xl mx-auto text-center space-y-6 bg-white border border-beige rounded-3xl shadow-sm my-8">
-      <span className="font-body text-[0.65rem] tracking-[0.35em] text-champagne uppercase block">
+    <div className="py-12 sm:py-20 px-4 sm:px-6 max-w-xl mx-auto text-center space-y-5 sm:space-y-6 bg-white border border-beige rounded-2xl sm:rounded-3xl shadow-xs my-6 sm:my-8">
+      <span className="font-body text-[0.6rem] sm:text-[0.65rem] tracking-[0.25em] sm:tracking-[0.35em] text-champagne uppercase block">
         {content.title || 'Confirmación RSVP'}
       </span>
 
       <h3
-        className="font-display text-2xl text-brown font-light"
+        className="font-display text-xl sm:text-2xl text-brown font-light"
         style={{ fontFamily: theme?.headingFont || 'Cormorant Garamond' }}
       >
         {content.subtitle || 'Por favor confirma tu presencia'}
       </h3>
 
       {submitted ? (
-        <div className="p-6 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl space-y-2">
-          <p className="font-body text-sm font-semibold">¡Gracias por confirmar tu asistencia!</p>
+        <div className="p-5 sm:p-6 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl space-y-1.5">
+          <p className="font-body text-xs sm:text-sm font-semibold">¡Gracias por confirmar tu asistencia!</p>
           <p className="font-body text-xs text-emerald-600">Hemos registrado tus datos correctamente.</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4 text-left pt-2">
           <div>
-            <label className="block font-body text-[0.68rem] tracking-wider text-brown/65 uppercase mb-1">
+            <label className="block font-body text-[0.65rem] sm:text-[0.68rem] tracking-wider text-brown/65 uppercase mb-1">
               Nombre Completo
             </label>
             <input
@@ -58,7 +58,7 @@ export default function RsvpSection({ section, theme, onConfirmRsvp }: SectionPr
           </div>
 
           <div>
-            <label className="block font-body text-[0.68rem] tracking-wider text-brown/65 uppercase mb-1">
+            <label className="block font-body text-[0.65rem] sm:text-[0.68rem] tracking-wider text-brown/65 uppercase mb-1">
               Número de Pases Confirmados
             </label>
             <select
@@ -74,7 +74,7 @@ export default function RsvpSection({ section, theme, onConfirmRsvp }: SectionPr
           </div>
 
           <div>
-            <label className="block font-body text-[0.68rem] tracking-wider text-brown/65 uppercase mb-1">
+            <label className="block font-body text-[0.65rem] sm:text-[0.68rem] tracking-wider text-brown/65 uppercase mb-1">
               Restricciones Alimentarias (Opcional)
             </label>
             <input

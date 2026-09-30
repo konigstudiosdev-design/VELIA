@@ -31,6 +31,7 @@ import {
   EventStatus,
 } from '../types'
 import { INITIAL_SECTIONS, INITIAL_GUESTS, INITIAL_ACTIVITIES } from '../data/mockData'
+import { getDefaultSections } from '../data/templateDefinitions'
 
 // Track sequence timestamps for autosave concurrency control
 let lastSaveTimestamp = 0
@@ -54,9 +55,20 @@ export function generateGuestToken(): string {
 /**
  * Normalizes a custom slug to be clean for URLs (e.g. "lucia-y-mateo")
  */
-export function cleanSlug(rawSlug: string): string {
+export function cleanSlug(rawSlug?: string): string {
+  if (!rawSlug) return `evento-${Date.now().toString(36)}`
   let slug = rawSlug.trim().toLowerCase()
-  slug = slug.replace(/^https?:\/\//, '').replace(/^velia\.mx\/e\//, '').replace(/^velia\.mx\//, '')
+
+  // Iteratively strip any leading or nested protocol / domain prefixes
+  let previous = ''
+  while (slug !== previous) {
+    previous = slug
+    slug = slug
+      .replace(/^https?:\/\//g, '')
+      .replace(/velia\.mx\/e\//g, '')
+      .replace(/velia\.mx\//g, '')
+  }
+
   slug = slug.replace(/[^a-z0-9-]/g, '-')
   slug = slug.replace(/-+/g, '-').replace(/^-|-$/g, '')
   return slug || `evento-${Date.now().toString(36)}`
@@ -72,19 +84,23 @@ export async function getUniqueSlug(rawSlug: string, currentInvitationId?: strin
 
   const invColl = collection(db, 'invitations')
 
-  while (counter <= 20) {
-    const q = query(invColl, where('slug', '==', candidate))
-    const snap = await getDocs(q)
+  try {
+    while (counter <= 20) {
+      const q = query(invColl, where('slug', '==', candidate))
+      const snap = await getDocs(q)
 
-    if (snap.empty || (currentInvitationId && snap.docs[0].id === currentInvitationId)) {
-      return candidate
+      if (snap.empty || (currentInvitationId && snap.docs[0].id === currentInvitationId)) {
+        return candidate
+      }
+
+      counter++
+      candidate = `${baseSlug}-${counter}`
     }
-
-    counter++
-    candidate = `${baseSlug}-${counter}`
+  } catch (err) {
+    console.warn('Firestore slug uniqueness query fallback:', err)
   }
 
-  return `${baseSlug}-${Date.now().toString(36)}`
+  return baseSlug
 }
 
 /**
@@ -93,9 +109,6 @@ export async function getUniqueSlug(rawSlug: string, currentInvitationId?: strin
 export function validateEventData(data: Partial<EventData>): { valid: boolean; error?: string } {
   if (!data.person1Name || data.person1Name.trim().length === 0) {
     return { valid: false, error: 'El nombre principal es obligatorio.' }
-  }
-  if (!data.date || data.date.trim().length === 0) {
-    return { valid: false, error: 'La fecha del evento es obligatoria.' }
   }
   return { valid: true }
 }
@@ -129,10 +142,12 @@ export async function createEventAndInvitation(
   const eventId = `evt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
   const invitationId = `inv_${eventId}`
 
-  const slug = await getUniqueSlug(
-    eventData.customSlug || `${eventData.person1Name}-${eventData.person2Name || ''}`,
-    invitationId
-  )
+  let slug = cleanSlug(eventData.customSlug || `${eventData.person1Name}-${eventData.person2Name || ''}`)
+  try {
+    slug = await getUniqueSlug(slug, invitationId)
+  } catch (e) {
+    console.warn('Unique slug check fallback:', e)
+  }
 
   const finalEventData: EventData = {
     ...eventData,
@@ -141,6 +156,7 @@ export async function createEventAndInvitation(
     invitationId,
     customSlug: slug,
     status: eventData.status || 'Published',
+    date: eventData.date || new Date().toISOString().split('T')[0],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }
@@ -165,7 +181,7 @@ export async function createEventAndInvitation(
     slug,
     status: finalEventData.status,
     eventData: finalEventData,
-    sections: INITIAL_SECTIONS,
+    sections: getDefaultSections(finalEventData),
     viewsCount: 0,
     publishedAt: finalEventData.status === 'Published' ? new Date().toISOString() : null,
     createdAt: new Date().toISOString(),
@@ -173,39 +189,6 @@ export async function createEventAndInvitation(
     createdAtServer: serverTimestamp(),
     updatedAtServer: serverTimestamp(),
   })
-
-  // 3. Populate initial private guests & public guestAccess records
-  for (const g of INITIAL_GUESTS) {
-    const token = g.token || generateGuestToken()
-    const guestWithToken: GuestItem = {
-      ...g,
-      token,
-      invitationId,
-    }
-
-    const guestRef = doc(db, 'invitations', invitationId, 'guests', g.id)
-    batch.set(guestRef, guestWithToken)
-
-    const accessRef = doc(db, 'guestAccess', token)
-    batch.set(accessRef, {
-      token,
-      invitationId,
-      guestId: g.id,
-      ownerId,
-      guestName: g.name,
-      passes: g.passes,
-      confirmedGuests: g.confirmedGuests || 0,
-      rsvp: g.rsvp,
-      status: 'Published',
-      updatedAt: new Date().toISOString(),
-    })
-  }
-
-  // Populate initial activities
-  for (const act of INITIAL_ACTIVITIES) {
-    const actRef = doc(db, 'invitations', invitationId, 'activities', act.id)
-    batch.set(actRef, act)
-  }
 
   await batch.commit()
 
@@ -296,14 +279,19 @@ export async function updateInvitationStatus(
   invitationId: string,
   status: EventStatus
 ): Promise<void> {
+  if (!ownerId || !eventId) return
   const batch = writeBatch(db)
 
   const userEventRef = doc(db, 'users', ownerId, 'events', eventId)
-  batch.update(userEventRef, {
-    status,
-    updatedAt: new Date().toISOString(),
-    updatedAtServer: serverTimestamp(),
-  })
+  batch.set(
+    userEventRef,
+    {
+      status,
+      updatedAt: new Date().toISOString(),
+      updatedAtServer: serverTimestamp(),
+    },
+    { merge: true }
+  )
 
   if (invitationId) {
     const invRef = doc(db, 'invitations', invitationId)
@@ -315,19 +303,20 @@ export async function updateInvitationStatus(
     if (status === 'Published') {
       updatePayload.publishedAt = new Date().toISOString()
     }
-    batch.update(invRef, updatePayload)
+    batch.set(invRef, updatePayload, { merge: true })
 
-    const guestsSnap = await getDocs(collection(db, 'invitations', invitationId, 'guests'))
-    guestsSnap.forEach(gDoc => {
-      const gData = gDoc.data() as GuestItem
-      if (gData.token) {
-        const accessRef = doc(db, 'guestAccess', gData.token)
-        batch.update(accessRef, {
-          status,
-          updatedAt: new Date().toISOString(),
-        })
-      }
-    })
+    try {
+      const guestsSnap = await getDocs(collection(db, 'invitations', invitationId, 'guests'))
+      guestsSnap.forEach(gDoc => {
+        const gData = gDoc.data() as GuestItem
+        if (gData.token) {
+          const accessRef = doc(db, 'guestAccess', gData.token)
+          batch.set(accessRef, { status, updatedAt: new Date().toISOString() }, { merge: true })
+        }
+      })
+    } catch (err) {
+      console.warn('Guest access status update fallback:', err)
+    }
   }
 
   await batch.commit()
@@ -340,6 +329,8 @@ export async function saveInvitationSections(
   invitationId: string,
   sections: SectionConfig[]
 ): Promise<void> {
+  if (!invitationId) return
+
   const requestTimestamp = Date.now()
   if (requestTimestamp < lastSaveTimestamp) {
     return
@@ -347,10 +338,37 @@ export async function saveInvitationSections(
   lastSaveTimestamp = requestTimestamp
 
   const invRef = doc(db, 'invitations', invitationId)
-  await updateDoc(invRef, {
-    sections,
-    updatedAt: new Date().toISOString(),
-    updatedAtServer: serverTimestamp(),
+  try {
+    await setDoc(
+      invRef,
+      {
+        sections,
+        updatedAt: new Date().toISOString(),
+        updatedAtServer: serverTimestamp(),
+      },
+      { merge: true }
+    )
+  } catch (err) {
+    console.warn('saveInvitationSections error fallback:', err)
+  }
+}
+
+/**
+ * Real-time listener for invitation sections
+ */
+export function subscribeInvitationSections(
+  invitationId: string,
+  callback: (sections: SectionConfig[]) => void
+) {
+  if (!invitationId) return () => {}
+  const invRef = doc(db, 'invitations', invitationId)
+  return onSnapshot(invRef, (snap) => {
+    if (snap.exists()) {
+      const data = snap.data()
+      if (data.sections && Array.isArray(data.sections)) {
+        callback(data.sections)
+      }
+    }
   })
 }
 
@@ -363,33 +381,74 @@ export async function updateEventData(
   invitationId: string,
   eventData: EventData
 ): Promise<void> {
-  const validation = validateEventData(eventData)
-  if (!validation.valid) throw new Error(validation.error)
+  if (!ownerId || !eventId) return
 
-  const uniqueSlug = await getUniqueSlug(eventData.customSlug, invitationId)
-  const updatedData: EventData = {
+  const cleanedEventData: EventData = {
     ...eventData,
-    customSlug: uniqueSlug,
+    person1Name: eventData.person1Name || 'Mi Evento',
+    date: eventData.date || new Date().toISOString().split('T')[0],
+    customSlug: cleanSlug(eventData.customSlug || `${eventData.person1Name}`),
     updatedAt: new Date().toISOString(),
   }
+
+  const validation = validateEventData(cleanedEventData)
+  if (!validation.valid) throw new Error(validation.error)
+
+  let uniqueSlug = cleanedEventData.customSlug
+  try {
+    uniqueSlug = await getUniqueSlug(cleanedEventData.customSlug, invitationId)
+  } catch (e) {
+    console.warn('Unique slug check update fallback:', e)
+  }
+  cleanedEventData.customSlug = uniqueSlug
 
   const batch = writeBatch(db)
 
   const userEventRef = doc(db, 'users', ownerId, 'events', eventId)
-  batch.update(userEventRef, {
-    ...updatedData,
-    updatedAtServer: serverTimestamp(),
-  })
+  batch.set(
+    userEventRef,
+    {
+      ...cleanedEventData,
+      updatedAtServer: serverTimestamp(),
+    },
+    { merge: true }
+  )
 
   if (invitationId) {
     const invRef = doc(db, 'invitations', invitationId)
-    batch.update(invRef, {
-      eventData: updatedData,
-      slug: uniqueSlug,
-      status: updatedData.status,
-      updatedAt: new Date().toISOString(),
-      updatedAtServer: serverTimestamp(),
-    })
+    batch.set(
+      invRef,
+      {
+        eventData: cleanedEventData,
+        slug: uniqueSlug,
+        status: cleanedEventData.status,
+        updatedAt: new Date().toISOString(),
+        updatedAtServer: serverTimestamp(),
+      },
+      { merge: true }
+    )
+  }
+
+  await batch.commit()
+}
+
+/**
+ * Deletes an event and its associated public invitation document
+ */
+export async function deleteEventAndInvitation(
+  ownerId: string,
+  eventId: string,
+  invitationId?: string
+): Promise<void> {
+  if (!ownerId || !eventId) return
+  const batch = writeBatch(db)
+
+  const userEventRef = doc(db, 'users', ownerId, 'events', eventId)
+  batch.delete(userEventRef)
+
+  if (invitationId) {
+    const invRef = doc(db, 'invitations', invitationId)
+    batch.delete(invRef)
   }
 
   await batch.commit()

@@ -39,15 +39,15 @@ export default function MobileNav({
       {/* Mobile Top Header */}
       <div className="lg:hidden fixed top-0 inset-x-0 z-40 bg-brown text-ivory px-4 h-16 flex items-center justify-between border-b border-white/10 shadow-sm">
         <button
-          onClick={onGoToLanding}
-          className="font-display text-xl tracking-[0.25em] text-ivory font-light"
+          onClick={() => onSelectTab('inicio')}
+          className="font-display text-xl tracking-[0.25em] text-ivory font-light cursor-pointer"
         >
           VÉLIA
         </button>
 
         <div className="flex items-center gap-3">
           <span className="font-body text-xs text-champagne bg-white/10 px-2.5 py-1 rounded-full truncate max-w-[140px]">
-            {eventData.person1Name} &amp; {eventData.person2Name || 'Mateo'}
+            {eventData.person1Name || 'Mi Evento'}{eventData.person2Name ? ` & ${eventData.person2Name}` : ''}
           </span>
 
           <button

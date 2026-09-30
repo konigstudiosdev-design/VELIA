@@ -8,6 +8,8 @@ interface InvitationRendererProps {
   eventData?: EventData
   theme?: InvitationTheme
   mode?: 'editor' | 'preview' | 'public'
+  selectedSectionId?: string
+  onSelectSectionId?: (id: string) => void
   onConfirmRsvp?: (guestId: string, status: 'Confirmado' | 'Rechazado', dietary?: string) => void
 }
 
@@ -16,6 +18,8 @@ export default function InvitationRenderer({
   eventData,
   theme,
   mode = 'public',
+  selectedSectionId,
+  onSelectSectionId,
   onConfirmRsvp,
 }: InvitationRendererProps) {
   const normalizedSections: InvitationSection[] = normalizeInvitationSections(sections, eventData)
@@ -42,16 +46,42 @@ export default function InvitationRenderer({
         fontFamily: activeTheme.bodyFont,
       }}
     >
-      {normalizedSections.map(sec => (
-        <SectionRenderer
-          key={sec.id}
-          section={sec}
-          eventData={eventData}
-          theme={activeTheme}
-          mode={mode}
-          onConfirmRsvp={onConfirmRsvp}
-        />
-      ))}
+      {normalizedSections.map(sec => {
+        const isSelected = mode === 'editor' && selectedSectionId === sec.id
+        return (
+          <div
+            key={sec.id}
+            onClick={() => {
+              if (mode === 'editor' && onSelectSectionId) {
+                onSelectSectionId(sec.id)
+              }
+            }}
+            className={`relative transition-all ${
+              mode === 'editor'
+                ? `cursor-pointer ${
+                    isSelected
+                      ? 'ring-2 ring-champagne bg-champagne/5 relative z-10 shadow-xs'
+                      : 'hover:ring-1 hover:ring-beige/80'
+                  }`
+                : ''
+            }`}
+          >
+            {mode === 'editor' && isSelected && (
+              <div className="absolute top-2 right-2 z-30 bg-champagne text-brown font-body text-[0.58rem] tracking-wider uppercase px-2.5 py-0.5 rounded shadow-xs font-medium">
+                {sec.type || 'Sección'}
+              </div>
+            )}
+
+            <SectionRenderer
+              section={sec}
+              eventData={eventData}
+              theme={activeTheme}
+              mode={mode}
+              onConfirmRsvp={onConfirmRsvp}
+            />
+          </div>
+        )
+      })}
     </div>
   )
 }

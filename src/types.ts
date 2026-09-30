@@ -8,6 +8,9 @@ export type AppView =
   | 'preview'
   | 'creation'
   | 'dashboard'
+  | 'partner_onboarding'
+  | 'partner_dashboard'
+  | 'admin_dashboard'
 
 export type DashboardTab =
   | 'inicio'
@@ -19,6 +22,18 @@ export type DashboardTab =
   | 'galeria'
   | 'estadisticas'
   | 'configuracion'
+  | 'ayuda'
+
+export type PartnerDashboardTab =
+  | 'inicio'
+  | 'clientes'
+  | 'eventos'
+  | 'invitaciones'
+  | 'ventas'
+  | 'comisiones'
+  | 'referidos'
+  | 'materiales'
+  | 'perfil'
   | 'ayuda'
 
 export type EventType =
@@ -95,6 +110,7 @@ export interface PlanDefinition {
   billingType: BillingType
   tagline: string
   featured?: boolean
+  stripePaymentLink?: string
   limits: PlanLimits
   features: PlanFeatures
   featureBulletList: string[]
@@ -111,6 +127,7 @@ export interface PurchaseRecord {
   providerSessionId?: string
   providerPaymentId?: string
   status: BillingStatus
+  partnerId?: string
   createdAt: string
   updatedAt: string
 }
@@ -173,6 +190,8 @@ export interface UserProfile {
   email: string
   photoURL?: string
   provider?: string
+  role?: 'client' | 'partner' | 'admin'
+  partnerId?: string
   planId?: PlanId
   billingStatus?: BillingStatus
   createdAt: string
@@ -183,6 +202,8 @@ export interface EventData {
   id?: string
   ownerId?: string
   invitationId?: string
+  partnerId?: string
+  partnerClientId?: string
   eventType: EventType
   person1Name: string
   person2Name?: string
@@ -289,6 +310,142 @@ export interface Template {
   description: string
   fontFamily: string
   features: string[]
+}
+
+// ─── PARTNERS SYSTEM TYPES ───────────────────────────────────────────────────
+
+export type PartnerRole =
+  | 'wedding_planner'
+  | 'event_planner'
+  | 'organizer'
+  | 'venue'
+  | 'photographer'
+  | 'decorator'
+  | 'agency'
+  | 'other'
+
+export type PartnerTier = 'partner' | 'pro' | 'studio'
+
+export type PartnerStatus = 'pending' | 'active' | 'suspended' | 'rejected'
+
+export type CommissionStatus = 'pending' | 'approved' | 'paid' | 'cancelled' | 'refunded'
+
+export interface PartnerProfile {
+  partnerId: string
+  userId: string
+  firstName: string
+  lastName: string
+  businessName: string
+  businessType: PartnerRole
+  email: string
+  phone: string
+  whatsapp: string
+  city: string
+  instagram?: string
+  website?: string
+  description?: string
+  status: PartnerStatus
+  tier: PartnerTier
+  commissionRate: number
+  referralCode: string
+  referralSlug: string
+  paymentMethodData?: {
+    accountHolderName?: string
+    bankName?: string
+    clabeNumber?: string
+    paymentMethodType?: 'spei' | 'stripe' | 'other'
+    notes?: string
+  }
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PartnerClient {
+  id: string
+  partnerId: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  whatsapp?: string
+  eventType: EventType
+  notes?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PartnerSale {
+  id: string
+  partnerId: string
+  partnerUserId: string
+  clientId?: string
+  clientName?: string
+  eventId: string
+  eventName?: string
+  invitationId?: string
+  planId: PlanId
+  planName: string
+  amount: number
+  currency: string
+  commissionRate: number
+  commissionAmount: number
+  status: CommissionStatus
+  createdAt: string
+  paidAt?: string
+}
+
+export interface PartnerCommission {
+  id: string
+  saleId: string
+  partnerId: string
+  partnerUserId: string
+  clientId?: string
+  clientName?: string
+  eventId: string
+  eventName?: string
+  planId: PlanId
+  saleAmount: number
+  commissionRate: number
+  commissionAmount: number
+  status: CommissionStatus
+  createdAt: string
+  approvedAt?: string
+  paidAt?: string
+}
+
+export interface PartnerAttribution {
+  partnerId: string
+  referralCode: string
+  referralSlug: string
+  timestamp: number
+  expiresAt: number
+}
+
+export interface PartnerSettings {
+  defaultCommissionRate: number
+  attributionWindowDays: number
+  minimumPayoutAmount: number
+  tierRates: {
+    partner: number
+    pro: number
+    studio: number
+  }
+  updatedAt: string
+}
+
+export interface PartnerInvite {
+  id: string
+  code: string
+  businessName?: string
+  email?: string
+  commissionRate: number
+  tier: PartnerTier
+  createdBy: string
+  used: boolean
+  usedByPartnerId?: string
+  usedByUserId?: string
+  createdAt: string
+  expiresAt: string
 }
 
 export * from './data/mockData'

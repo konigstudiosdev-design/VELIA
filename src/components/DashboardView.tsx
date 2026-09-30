@@ -18,10 +18,12 @@ import {
   subscribeGifts,
   subscribeGalleryPhotos,
   saveInvitationSections,
+  subscribeInvitationSections,
   saveGuest as saveGuestToFirestore,
   deleteGuest as deleteGuestFromFirestore,
   updateRsvpStatus,
 } from '../services/eventService'
+import { saveSectionsDraft, getSectionsDraft, saveEventDataDraft } from '../utils/draftStorage'
 
 import Sidebar from './dashboard/Sidebar'
 import MobileNav from './dashboard/MobileNav'
@@ -37,6 +39,8 @@ import SettingsTab from './dashboard/SettingsTab'
 import HelpTab from './dashboard/HelpTab'
 import PublicInvitationModal from './PublicInvitationModal'
 import PublishModal from './dashboard/PublishModal'
+import SavedInvitationsModal from './SavedInvitationsModal'
+import ErrorBoundary from './ErrorBoundary'
 
 interface DashboardViewProps {
   eventData: EventData
@@ -60,25 +64,56 @@ export default function DashboardView({
   onGoToLanding,
 }: DashboardViewProps) {
   const [currentTab, setCurrentTab] = useState<DashboardTab>('inicio')
-  const [sections, setSections] = useState<SectionConfig[]>(INITIAL_SECTIONS)
-  const [guests, setGuests] = useState<GuestItem[]>(INITIAL_GUESTS)
+  const [sections, setSections] = useState<SectionConfig[]>(() => {
+    const draft = getSectionsDraft()
+    if (draft && draft.length > 0) return draft
+    return INITIAL_SECTIONS
+  })
+  const [guests, setGuests] = useState<GuestItem[]>([])
   const [tables, setTables] = useState<TableGroup[]>([])
   const [gifts, setGifts] = useState<GiftItem[]>([])
   const [photos, setPhotos] = useState<GalleryPhoto[]>([])
-  const [activities, setActivities] = useState<ActivityItem[]>(INITIAL_ACTIVITIES)
+  const [activities, setActivities] = useState<ActivityItem[]>([])
 
   // Modals
   const [showPublicModal, setShowPublicModal] = useState(false)
   const [showPublishModal, setShowPublishModal] = useState(false)
+  const [showSavedModal, setShowSavedModal] = useState(false)
 
   // Autosave Ref
   const autosaveTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const sectionsRef = useRef<SectionConfig[]>(sections)
+  sectionsRef.current = sections
 
   const invitationId = eventData.invitationId
 
-  // Subscribe to real-time Firestore guests, tables, gifts, photos, and activities
+  // Save eventData draft and add beforeunload flush
+  useEffect(() => {
+    saveEventDataDraft(eventData)
+  }, [eventData])
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      saveSectionsDraft(sectionsRef.current)
+      saveEventDataDraft(eventData)
+      if (invitationId) {
+        saveInvitationSections(invitationId, sectionsRef.current).catch(() => {})
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [invitationId, eventData])
+
+  // Subscribe to real-time Firestore sections, guests, tables, gifts, photos, and activities
   useEffect(() => {
     if (!invitationId) return
+
+    const unsubSections = subscribeInvitationSections(invitationId, (remoteSections) => {
+      if (remoteSections && remoteSections.length > 0) {
+        setSections(remoteSections)
+        saveSectionsDraft(remoteSections)
+      }
+    })
 
     const unsubGuests = subscribeGuests(invitationId, (updatedGuests) => {
       if (updatedGuests.length > 0) {
@@ -105,6 +140,7 @@ export default function DashboardView({
     })
 
     return () => {
+      unsubSections()
       unsubGuests()
       unsubTables()
       unsubGifts()
@@ -116,6 +152,8 @@ export default function DashboardView({
   // Autosave sections to Firestore when modified
   const handleUpdateSections = (newSections: SectionConfig[]) => {
     setSections(newSections)
+    saveSectionsDraft(newSections)
+
     if (!invitationId) return
 
     if (autosaveTimerRef.current) {
@@ -128,7 +166,7 @@ export default function DashboardView({
       } catch (err) {
         console.error('Error al guardar secciones en Firestore:', err)
       }
-    }, 1000)
+    }, 600)
   }
 
   // Update Guests in Firestore
@@ -213,6 +251,7 @@ export default function DashboardView({
         onSelectTab={setCurrentTab}
         eventData={eventData}
         onGoToLanding={onGoToLanding}
+        onOpenSavedInvitations={() => setShowSavedModal(true)}
       />
 
       {/* Mobile Header & Bottom Navigation */}
@@ -227,78 +266,103 @@ export default function DashboardView({
       <main className="flex-1 lg:ml-0 pt-20 lg:pt-0 pb-20 lg:pb-0 overflow-y-auto">
         <div className="p-4 sm:p-6 lg:p-10">
           {currentTab === 'inicio' && (
-            <HomeTab
-              eventData={eventData}
-              guests={guests}
-              activities={activities}
-              onSelectTab={setCurrentTab}
-              onOpenPublicView={() => setShowPublicModal(true)}
-              onOpenPublishModal={() => setShowPublishModal(true)}
-            />
+            <ErrorBoundary sectionName="Inicio">
+              <HomeTab
+                eventData={eventData}
+                guests={guests}
+                activities={activities}
+                onSelectTab={setCurrentTab}
+                onOpenPublicView={() => setShowPublicModal(true)}
+                onOpenPublishModal={() => setShowPublishModal(true)}
+              />
+            </ErrorBoundary>
           )}
 
           {currentTab === 'editor' && (
-            <EditorTab
-              eventData={eventData}
-              sections={sections}
-              onUpdateSections={handleUpdateSections}
-              onOpenPublicView={() => setShowPublicModal(true)}
-              onOpenPublishModal={() => setShowPublishModal(true)}
-            />
+            <ErrorBoundary sectionName="Editor de Invitación">
+              <EditorTab
+                eventData={eventData}
+                sections={sections}
+                onUpdateSections={handleUpdateSections}
+                onOpenPublicView={() => setShowPublicModal(true)}
+                onOpenPublishModal={() => setShowPublishModal(true)}
+                onOpenSavedInvitations={() => setShowSavedModal(true)}
+              />
+            </ErrorBoundary>
           )}
 
           {currentTab === 'invitados' && (
-            <GuestsTab
-              guests={guests}
-              customSlug={eventData.customSlug}
-              onSaveGuest={handleSaveSingleGuest}
-              onDeleteGuest={handleDeleteSingleGuest}
-              onUpdateGuests={handleUpdateGuestsArray}
-            />
+            <ErrorBoundary sectionName="Gestión de Invitados">
+              <GuestsTab
+                guests={guests}
+                customSlug={eventData.customSlug}
+                onSaveGuest={handleSaveSingleGuest}
+                onDeleteGuest={handleDeleteSingleGuest}
+                onUpdateGuests={handleUpdateGuestsArray}
+              />
+            </ErrorBoundary>
           )}
 
-          {currentTab === 'rsvp' && <RsvpTab guests={guests} />}
+          {currentTab === 'rsvp' && (
+            <ErrorBoundary sectionName="Confirmaciones RSVP">
+              <RsvpTab guests={guests} />
+            </ErrorBoundary>
+          )}
 
           {currentTab === 'mesas' && (
-            <TablesTab
-              guests={guests}
-              tables={tables}
-              invitationId={invitationId}
-              onUpdateGuests={handleUpdateGuestsArray}
-            />
+            <ErrorBoundary sectionName="Organizador de Mesas">
+              <TablesTab
+                guests={guests}
+                tables={tables}
+                invitationId={invitationId}
+                onUpdateGuests={handleUpdateGuestsArray}
+              />
+            </ErrorBoundary>
           )}
 
           {currentTab === 'regalos' && (
-            <GiftsTab
-              gifts={gifts}
-              invitationId={invitationId}
-            />
+            <ErrorBoundary sectionName="Mesa de Regalos">
+              <GiftsTab
+                gifts={gifts}
+                invitationId={invitationId}
+              />
+            </ErrorBoundary>
           )}
 
           {currentTab === 'galeria' && (
-            <GalleryTab
-              photos={photos}
-              invitationId={invitationId}
-            />
+            <ErrorBoundary sectionName="Galería de Fotos">
+              <GalleryTab
+                photos={photos}
+                invitationId={invitationId}
+              />
+            </ErrorBoundary>
           )}
 
           {currentTab === 'estadisticas' && (
-            <AnalyticsTab
-              guests={guests}
-              tables={tables}
-              photos={photos}
-              viewsCount={(eventData as any).viewsCount || 0}
-            />
+            <ErrorBoundary sectionName="Estadísticas">
+              <AnalyticsTab
+                guests={guests}
+                tables={tables}
+                photos={photos}
+                viewsCount={(eventData as any).viewsCount || 0}
+              />
+            </ErrorBoundary>
           )}
 
           {currentTab === 'configuracion' && (
-            <SettingsTab
-              eventData={eventData}
-              onUpdateEventData={onUpdateEventData}
-            />
+            <ErrorBoundary sectionName="Configuración">
+              <SettingsTab
+                eventData={eventData}
+                onUpdateEventData={onUpdateEventData}
+              />
+            </ErrorBoundary>
           )}
 
-          {currentTab === 'ayuda' && <HelpTab />}
+          {currentTab === 'ayuda' && (
+            <ErrorBoundary sectionName="Centro de Ayuda">
+              <HelpTab />
+            </ErrorBoundary>
+          )}
         </div>
       </main>
 
@@ -321,6 +385,19 @@ export default function DashboardView({
           eventData={eventData}
           onClose={() => setShowPublishModal(false)}
           onOpenPublicView={() => setShowPublicModal(true)}
+        />
+      )}
+
+      {/* Saved Invitations Manager Modal */}
+      {showSavedModal && (
+        <SavedInvitationsModal
+          currentEventId={eventData.id}
+          onSelectEvent={(evt) => {
+            onUpdateEventData(evt)
+            setShowSavedModal(false)
+          }}
+          onCreateNewEvent={onEditOnboarding}
+          onClose={() => setShowSavedModal(false)}
         />
       )}
     </div>

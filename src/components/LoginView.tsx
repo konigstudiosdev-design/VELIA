@@ -64,39 +64,39 @@ export default function LoginView({ onNavigate, onLoginSuccess }: LoginViewProps
   }
 
   return (
-    <div className="min-h-screen pt-28 pb-16 flex items-center justify-center px-6 bg-ivory">
-      <div className="w-full max-w-md">
+    <div className="h-screen pt-16 lg:pt-20 flex items-center justify-center px-4 bg-ivory overflow-hidden">
+      <div className="w-full max-w-md my-auto">
         {/* Header card */}
-        <div className="bg-white border border-beige/80 rounded-2xl p-8 lg:p-10 shadow-sm relative">
+        <div className="bg-white border border-beige/80 rounded-2xl p-6 sm:p-8 shadow-sm relative">
           {/* Top emblem */}
-          <div className="text-center mb-8">
-            <span className="font-display text-2xl tracking-[0.3em] text-brown font-light block mb-2">
+          <div className="text-center mb-5">
+            <span className="font-display text-xl tracking-[0.3em] text-brown font-light block mb-1">
               VÉLIA
             </span>
-            <div className="w-8 h-[0.5px] bg-champagne mx-auto mb-4" />
-            <h1 className="font-display text-3xl lg:text-4xl text-brown font-light">
+            <div className="w-6 h-[0.5px] bg-champagne mx-auto mb-2" />
+            <h1 className="font-display text-2xl lg:text-3xl text-brown font-light">
               Bienvenido a VÉLIA
             </h1>
-            <p className="font-body text-xs text-brown/50 mt-2">
+            <p className="font-body text-xs text-brown/50 mt-1">
               Ingresa a tu cuenta para administrar tus invitaciones.
             </p>
           </div>
 
           {error && (
-            <div className="mb-6 p-3 rounded bg-rose/15 border border-rose/30 text-brown text-xs font-body text-center">
+            <div className="mb-4 p-2.5 rounded bg-rose/15 border border-rose/30 text-brown text-xs font-body text-center leading-tight">
               {error}
             </div>
           )}
 
           {infoMessage && (
-            <div className="mb-6 p-3 rounded bg-champagne/20 border border-champagne/40 text-brown text-xs font-body text-center">
+            <div className="mb-4 p-2.5 rounded bg-champagne/20 border border-champagne/40 text-brown text-xs font-body text-center leading-tight">
               {infoMessage}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
-              <label className="block font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase mb-2">
+              <label className="block font-body text-[0.7rem] tracking-[0.12em] text-brown/65 uppercase mb-1">
                 Correo electrónico
               </label>
               <input
@@ -105,13 +105,13 @@ export default function LoginView({ onNavigate, onLoginSuccess }: LoginViewProps
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="tu@correo.com"
-                className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white transition-all duration-200"
+                className="w-full px-3.5 py-2.5 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white transition-all duration-200"
               />
             </div>
 
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="font-body text-[0.72rem] tracking-[0.15em] text-brown/65 uppercase">
+              <div className="flex justify-between items-center mb-1">
+                <label className="font-body text-[0.7rem] tracking-[0.12em] text-brown/65 uppercase">
                   Contraseña
                 </label>
                 <button
@@ -128,25 +128,25 @@ export default function LoginView({ onNavigate, onLoginSuccess }: LoginViewProps
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white transition-all duration-200"
+                className="w-full px-3.5 py-2.5 bg-ivory/50 border border-beige/80 rounded-lg text-brown text-sm font-body focus:outline-none focus:border-champagne focus:bg-white transition-all duration-200"
               />
             </div>
 
             <button
               type="submit"
               disabled={submitting}
-              className="w-full bg-brown text-ivory font-body font-medium text-sm py-3.5 rounded-full hover:bg-ink transition-all duration-300 shadow-sm hover:scale-[1.01] cursor-pointer disabled:opacity-50"
+              className="w-full bg-brown text-ivory font-body font-medium text-sm py-2.5 rounded-full hover:bg-ink transition-all duration-300 shadow-sm hover:scale-[1.01] cursor-pointer disabled:opacity-50 mt-1"
             >
               {submitting ? 'Iniciando sesión...' : 'Entrar'}
             </button>
           </form>
 
           {/* Separator */}
-          <div className="relative my-8 text-center">
+          <div className="relative my-4 text-center">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-beige/80" />
             </div>
-            <span className="relative bg-white px-4 font-body text-xs text-brown/40 uppercase tracking-widest">
+            <span className="relative bg-white px-3 font-body text-[0.68rem] text-brown/40 uppercase tracking-widest">
               o continúa con
             </span>
           </div>
@@ -156,7 +156,7 @@ export default function LoginView({ onNavigate, onLoginSuccess }: LoginViewProps
             type="button"
             onClick={handleGoogleLogin}
             disabled={submitting}
-            className="w-full bg-white border border-beige/90 text-brown font-body text-sm font-medium py-3 rounded-full hover:bg-ivory/80 transition-colors flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
+            className="w-full bg-white border border-beige/90 text-brown font-body text-sm font-medium py-2.5 rounded-full hover:bg-ivory/80 transition-colors flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
@@ -180,7 +180,7 @@ export default function LoginView({ onNavigate, onLoginSuccess }: LoginViewProps
           </button>
 
           {/* Bottom link */}
-          <div className="mt-8 text-center pt-6 border-t border-beige/60">
+          <div className="mt-5 text-center pt-4 border-t border-beige/60">
             <p className="font-body text-xs text-brown/60">
               ¿No tienes una cuenta aún?{' '}
               <button

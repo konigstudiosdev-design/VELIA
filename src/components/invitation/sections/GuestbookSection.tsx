@@ -1,16 +1,23 @@
 import React, { useState } from 'react'
-import { InvitationSection, InvitationTheme } from '../../../types'
+import { InvitationSection, EventData, InvitationTheme } from '../../../types'
+import { getEventTypeConfig } from '../../../config/eventTypeConfig'
 
 interface SectionProps {
   section: InvitationSection
+  eventData?: EventData
   theme?: InvitationTheme
 }
 
-export default function GuestbookSection({ section, theme }: SectionProps) {
+export default function GuestbookSection({ section, eventData, theme }: SectionProps) {
   const content = section.content || {}
+  const config = getEventTypeConfig(eventData?.eventType)
+
+  const title = content.title || config.fieldLabels.guestbookTitle
+  const subtitle = content.subtitle || config.fieldLabels.guestbookSubtitle
+
   const [messages, setMessages] = useState([
-    { id: '1', name: 'Familia González', text: '¡Muchas felicidades! Que Dios bendiga su matrimonio siempre.' },
-    { id: '2', name: 'Carlos y Sofía', text: 'Estamos muy emocionados de acompañarlos en su gran día. ¡Un fuerte abrazo!' },
+    { id: '1', name: 'Familia González', text: `¡Muchas felicidades en este día tan especial!` },
+    { id: '2', name: 'Carlos y Sofía', text: 'Estamos muy emocionados de acompañarte. ¡Un fuerte abrazo!' },
   ])
   const [author, setAuthor] = useState('')
   const [msgText, setMsgText] = useState('')
@@ -26,11 +33,11 @@ export default function GuestbookSection({ section, theme }: SectionProps) {
   return (
     <div className="py-20 px-6 max-w-2xl mx-auto text-center space-y-8">
       <span className="font-body text-[0.65rem] tracking-[0.35em] text-champagne uppercase block">
-        {content.title || 'Libro de Firmas'}
+        {title}
       </span>
 
       <p className="font-body text-xs text-brown/60">
-        {content.subtitle || 'Déjanos un mensaje con tus buenos deseos para esta nueva etapa.'}
+        {subtitle}
       </p>
 
       {/* Message Form */}

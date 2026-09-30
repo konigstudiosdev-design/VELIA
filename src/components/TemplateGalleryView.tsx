@@ -224,6 +224,9 @@ export default function TemplateGalleryView({
                     <img
                       src={tpl.img}
                       alt={tpl.name}
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&h=1200&fit=crop&auto=format'
+                      }}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
                     <div className="absolute inset-0 bg-brown/20 group-hover:bg-brown/40 transition-colors duration-300" />

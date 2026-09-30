@@ -39,31 +39,31 @@ export default function CountdownSection({ section, eventData }: SectionProps) {
   }, [targetDateStr])
 
   return (
-    <div className="py-16 px-6 bg-brown text-ivory text-center">
-      <div className="max-w-2xl mx-auto space-y-8">
-        <span className="font-body text-[0.65rem] tracking-[0.35em] text-champagne/80 uppercase block">
+    <div className="py-12 sm:py-16 px-4 sm:px-6 bg-brown text-ivory text-center select-none">
+      <div className="max-w-2xl mx-auto space-y-6 sm:space-y-8">
+        <span className="font-body text-[0.6rem] sm:text-[0.65rem] tracking-[0.25em] sm:tracking-[0.35em] text-champagne/80 uppercase block">
           {content.title || 'Cuenta Regresiva'}
         </span>
 
         {isFinished ? (
-          <div className="p-8 bg-white/5 border border-white/10 rounded-2xl max-w-md mx-auto space-y-2">
+          <div className="p-6 sm:p-8 bg-white/5 border border-white/10 rounded-2xl max-w-md mx-auto space-y-2">
             <span className="text-3xl block">🎉</span>
-            <h3 className="font-display text-3xl text-white font-light">¡Hoy es el gran día!</h3>
+            <h3 className="font-display text-2xl sm:text-3xl text-white font-light">¡Hoy es el gran día!</h3>
             <p className="font-body text-xs text-champagne/80">Gracias por acompañarnos en esta celebración inolvidable.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-4 gap-3 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-6">
             {[
               { label: 'Días', val: timeLeft.days },
               { label: 'Horas', val: timeLeft.hours },
               { label: 'Minutos', val: timeLeft.minutes },
               { label: 'Segundos', val: timeLeft.seconds },
             ].map(item => (
-              <div key={item.label} className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-6 backdrop-blur-xs">
-                <span className="font-display text-3xl sm:text-5xl text-white font-light block leading-none">
+              <div key={item.label} className="bg-white/5 border border-white/10 rounded-2xl p-3 sm:p-6 backdrop-blur-xs flex flex-col items-center justify-center">
+                <span className="font-display text-2xl sm:text-5xl text-white font-light block leading-none">
                   {String(item.val).padStart(2, '0')}
                 </span>
-                <span className="font-body text-[0.6rem] tracking-[0.2em] text-champagne/70 uppercase mt-2 block">
+                <span className="font-body text-[0.55rem] sm:text-[0.6rem] tracking-[0.12em] sm:tracking-[0.2em] text-champagne/70 uppercase mt-1.5 sm:mt-2 block truncate w-full text-center">
                   {item.label}
                 </span>
               </div>

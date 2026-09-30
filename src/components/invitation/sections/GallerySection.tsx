@@ -15,17 +15,20 @@ export default function GallerySection({ section }: SectionProps) {
   ]
 
   return (
-    <div className="py-20 px-6 max-w-5xl mx-auto text-center space-y-8">
-      <span className="font-body text-[0.65rem] tracking-[0.35em] text-champagne uppercase block">
+    <div className="py-12 sm:py-20 px-4 sm:px-6 max-w-5xl mx-auto text-center space-y-6 sm:space-y-8 select-none">
+      <span className="font-body text-[0.6rem] sm:text-[0.65rem] tracking-[0.25em] sm:tracking-[0.35em] text-champagne uppercase block">
         {content.title || 'Galería de Fotos'}
       </span>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {images.map((imgUrl, idx) => (
-          <div key={idx} className="relative overflow-hidden rounded-2xl bg-beige group aspect-3/4">
+          <div key={idx} className="relative overflow-hidden rounded-2xl bg-beige group aspect-3/4 shadow-xs">
             <img
               src={imgUrl}
               alt={`Galería ${idx + 1}`}
+              onError={(e) => {
+                e.currentTarget.src = 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=600&h=800&fit=crop&auto=format'
+              }}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           </div>

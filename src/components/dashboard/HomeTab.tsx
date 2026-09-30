@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
 import { ActivityItem, DashboardTab, EventData, GuestItem } from '../../types'
-import { getEventEntitlements, getPlanDefinition } from '../../services/entitlementService'
+import { getEventEntitlements, getPlanDefinition, isOwnerAdminUser } from '../../services/entitlementService'
+import { getEventTypeConfig } from '../../config/eventTypeConfig'
+import { cleanSlug } from '../../services/eventService'
+import { useAuth } from '../../contexts/AuthContext'
 import PlansModal from '../billing/PlansModal'
 
 interface HomeTabProps {
@@ -20,9 +23,12 @@ export default function HomeTab({
   onOpenPublicView,
   onOpenPublishModal,
 }: HomeTabProps) {
+  const { user, userProfile } = useAuth()
+  const isOwner = isOwnerAdminUser(user?.email || '', userProfile?.role)
+
   const [showPlansModal, setShowPlansModal] = useState(false)
 
-  const { limits, planId } = getEventEntitlements(eventData)
+  const { limits, planId } = getEventEntitlements(eventData, user?.email || '', userProfile?.role)
   const currentPlan = getPlanDefinition(planId)
 
   // Compute counts
@@ -35,8 +41,10 @@ export default function HomeTab({
   const pendingPct = totalGuests > 0 ? Math.round((pending / totalGuests) * 100) : 0
   const declinedPct = totalGuests > 0 ? Math.round((declined / totalGuests) * 100) : 0
 
+  const config = getEventTypeConfig(eventData.eventType)
+  const isCouple = config.allowedFields.person2Name
   const eventTitle =
-    eventData.person2Name
+    isCouple && eventData.person2Name
       ? `${eventData.eventType} de ${eventData.person1Name} & ${eventData.person2Name}`
       : `${eventData.eventType} de ${eventData.person1Name}`
 
@@ -59,20 +67,26 @@ export default function HomeTab({
         {/* Active Plan Badge */}
         <div className="bg-white border border-beige/80 rounded-2xl p-3.5 shadow-xs flex items-center justify-between gap-4 self-start sm:self-auto">
           <div>
-            <span className="font-body text-[0.58rem] tracking-[0.2em] text-brown/40 uppercase block">
+            <span className="font-body text-[0.58rem] tracking-[0.2em] text-brown/40 uppercase block font-medium">
               Plan Comercial
             </span>
             <p className="font-display text-lg text-brown font-light leading-none mt-0.5">
-              Plan {currentPlan.name}
+              {isOwner ? '👑 Signature (Dueño König)' : `Plan ${currentPlan.name}`}
             </p>
           </div>
 
-          <button
-            onClick={() => setShowPlansModal(true)}
-            className="bg-champagne hover:bg-[#d4b990] text-brown font-body font-medium text-xs px-4 py-2 rounded-full transition-colors cursor-pointer"
-          >
-            Mejorar Plan
-          </button>
+          {isOwner ? (
+            <span className="bg-amber-100 text-amber-900 border border-amber-300 font-body font-semibold text-[0.62rem] px-3.5 py-1.5 rounded-full uppercase tracking-wider">
+              Acceso Ilimitado
+            </span>
+          ) : (
+            <button
+              onClick={() => setShowPlansModal(true)}
+              className="bg-champagne hover:bg-[#d4b990] text-brown font-body font-medium text-xs px-4 py-2 rounded-full transition-colors cursor-pointer"
+            >
+              Mejorar Plan
+            </button>
+          )}
         </div>
       </div>
 
@@ -89,7 +103,7 @@ export default function HomeTab({
                 {eventData.status === 'Published' ? 'PUBLICADA' : eventData.status.toUpperCase()}
               </span>
               <span className="font-body text-xs text-white/50">
-                velia.mx/e/{eventData.customSlug}
+                velia.mx/e/{cleanSlug(eventData.customSlug)}
               </span>
             </div>
 
@@ -120,6 +134,84 @@ export default function HomeTab({
         </div>
       </div>
 
+      {/* Event Progress Checklist Card */}
+      <div className="bg-white border border-beige/80 rounded-2xl p-6 lg:p-8 shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="font-body text-[0.6rem] tracking-[0.2em] text-champagne uppercase block mb-1 font-medium">
+              Estado de Avance
+            </span>
+            <h3 className="font-display text-2xl lg:text-3xl text-brown font-light">
+              Tu evento está tomando forma.
+            </h3>
+          </div>
+          <button
+            onClick={() => onSelectTab('editor')}
+            className="font-body text-xs font-medium text-brown border border-beige px-4 py-2 rounded-full hover:bg-ivory transition-colors cursor-pointer"
+          >
+            Ir al Editor →
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+          {/* Step 1: Información */}
+          <div className="bg-ivory/60 border border-beige/70 rounded-xl p-3.5 flex items-center gap-3">
+            <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold flex-none">
+              ✓
+            </span>
+            <div>
+              <p className="font-body text-xs font-semibold text-brown">Información</p>
+              <span className="font-body text-[0.65rem] text-emerald-700">Completado</span>
+            </div>
+          </div>
+
+          {/* Step 2: Diseño */}
+          <div className="bg-ivory/60 border border-beige/70 rounded-xl p-3.5 flex items-center gap-3">
+            <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold flex-none">
+              ✓
+            </span>
+            <div>
+              <p className="font-body text-xs font-semibold text-brown">Diseño</p>
+              <span className="font-body text-[0.65rem] text-emerald-700">Completado</span>
+            </div>
+          </div>
+
+          {/* Step 3: Invitados */}
+          <div className={`border rounded-xl p-3.5 flex items-center gap-3 ${
+            totalGuests > 0 ? 'bg-ivory/60 border-beige/70' : 'bg-white border-dashed border-beige'
+          }`}>
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-none ${
+              totalGuests > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-ivory border border-beige text-brown/40'
+            }`}>
+              {totalGuests > 0 ? '✓' : '○'}
+            </span>
+            <div>
+              <p className="font-body text-xs font-semibold text-brown">Invitados</p>
+              <span className={`font-body text-[0.65rem] ${totalGuests > 0 ? 'text-emerald-700' : 'text-brown/40'}`}>
+                {totalGuests > 0 ? `${totalGuests} agregados` : 'Pendiente'}
+              </span>
+            </div>
+          </div>
+
+          {/* Step 4: Publicación */}
+          <div className={`border rounded-xl p-3.5 flex items-center gap-3 ${
+            eventData.status === 'Published' ? 'bg-ivory/60 border-beige/70' : 'bg-white border-dashed border-beige'
+          }`}>
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-none ${
+              eventData.status === 'Published' ? 'bg-emerald-100 text-emerald-800' : 'bg-ivory border border-beige text-brown/40'
+            }`}>
+              {eventData.status === 'Published' ? '✓' : '○'}
+            </span>
+            <div>
+              <p className="font-body text-xs font-semibold text-brown">Publicación</p>
+              <span className={`font-body text-[0.65rem] ${eventData.status === 'Published' ? 'text-emerald-700' : 'text-brown/40'}`}>
+                {eventData.status === 'Published' ? 'Publicada' : 'Pendiente'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Plan Quota Usage Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <div className="bg-white border border-beige/80 rounded-2xl p-5 shadow-xs">
@@ -127,12 +219,12 @@ export default function HomeTab({
             Cupo de Pases
           </span>
           <p className="font-display text-2xl text-brown font-light">
-            {totalGuests} / {limits.maxGuests}
+            {isOwner ? `${totalGuests} (Ilimitados)` : `${totalGuests} / ${limits.maxGuests}`}
           </p>
           <div className="w-full h-1.5 bg-ivory rounded-full overflow-hidden border border-beige/60 mt-2">
             <div
               className="h-full bg-champagne rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(100, Math.round((totalGuests / limits.maxGuests) * 100))}%` }}
+              style={{ width: `${isOwner ? 100 : Math.min(100, Math.round((totalGuests / limits.maxGuests) * 100))}%` }}
             />
           </div>
         </div>
@@ -142,10 +234,10 @@ export default function HomeTab({
             Vigencia de Publicación
           </span>
           <p className="font-display text-2xl text-brown font-light">
-            {limits.publicationDays === 0 ? 'Ilimitada' : `${limits.publicationDays} días`}
+            {isOwner ? 'Ilimitada (Dueño)' : limits.publicationDays === 0 ? 'Ilimitada' : `${limits.publicationDays} días`}
           </p>
           <span className="font-body text-[0.65rem] text-brown/40 mt-1 block">
-            Plan {currentPlan.name}
+            {isOwner ? 'Cuenta Dueño König' : `Plan ${currentPlan.name}`}
           </span>
         </div>
 
@@ -154,10 +246,10 @@ export default function HomeTab({
             Estado de Pago
           </span>
           <p className="font-display text-2xl text-brown font-light capitalize">
-            {eventData.billingStatus === 'paid' ? 'Pagado ✓' : 'Borrador Free'}
+            {isOwner ? 'Ilimitado Gratuito' : eventData.billingStatus === 'paid' ? 'Pagado ✓' : 'Borrador Free'}
           </p>
           <span className="font-body text-[0.65rem] text-emerald-600 font-medium mt-1 block">
-            {eventData.billingStatus === 'paid' ? 'Licencia activa' : 'Requiere plan comercial'}
+            {isOwner ? '✓ Acceso Dueño Activo' : eventData.billingStatus === 'paid' ? 'Licencia activa' : 'Requiere plan comercial'}
           </span>
         </div>
       </div>

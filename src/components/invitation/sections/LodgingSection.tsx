@@ -14,17 +14,17 @@ export default function LodgingSection({ section, theme }: SectionProps) {
   ]
 
   return (
-    <div className="py-20 px-6 max-w-3xl mx-auto text-center space-y-8">
-      <span className="font-body text-[0.65rem] tracking-[0.35em] text-champagne uppercase block">
+    <div className="py-12 sm:py-20 px-4 sm:px-6 max-w-3xl mx-auto text-center space-y-6 sm:space-y-8">
+      <span className="font-body text-[0.6rem] sm:text-[0.65rem] tracking-[0.25em] sm:tracking-[0.35em] text-champagne uppercase block">
         {content.title || 'Hospedaje Recomendado'}
       </span>
 
       <div className="grid sm:grid-cols-2 gap-4">
         {hotels.map((h, idx) => (
-          <div key={idx} className="bg-white border border-beige/80 rounded-2xl p-6 text-left space-y-2">
+          <div key={idx} className="bg-white border border-beige/80 rounded-2xl p-5 sm:p-6 text-left space-y-2 shadow-xs">
             <span className="text-2xl block">🏨</span>
             <h4
-              className="font-display text-lg text-brown font-light"
+              className="font-display text-base sm:text-lg text-brown font-light"
               style={{ fontFamily: theme?.headingFont || 'Cormorant Garamond' }}
             >
               {h.name}
