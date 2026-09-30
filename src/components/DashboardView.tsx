@@ -287,6 +287,17 @@ export default function DashboardView({
                 onOpenPublicView={() => setShowPublicModal(true)}
                 onOpenPublishModal={() => setShowPublishModal(true)}
                 onOpenSavedInvitations={() => setShowSavedModal(true)}
+                onSaveInvitation={async () => {
+                  saveSectionsDraft(sections)
+                  saveEventDataDraft(eventData)
+                  if (invitationId) {
+                    try {
+                      await saveInvitationSections(invitationId, sections)
+                    } catch (err) {
+                      console.error('Error al guardar secciones:', err)
+                    }
+                  }
+                }}
               />
             </ErrorBoundary>
           )}

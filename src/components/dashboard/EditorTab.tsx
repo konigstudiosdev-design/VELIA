@@ -3,6 +3,8 @@ import { EventData, SectionConfig, ThemePreset, InvitationTheme, SectionType } f
 import { THEME_PRESETS } from '../../data/mockData'
 import { getEventTypeConfig } from '../../config/eventTypeConfig'
 import { getDefaultSections } from '../../data/templateDefinitions'
+import { saveSectionsDraft, saveEventDataDraft, saveThemeDraft } from '../../utils/draftStorage'
+import { saveInvitationSections } from '../../services/eventService'
 import PhotoPickerModal from './PhotoPickerModal'
 import InvitationRenderer from '../invitation/InvitationRenderer'
 
@@ -13,6 +15,7 @@ interface EditorTabProps {
   onOpenPublicView: () => void
   onOpenPublishModal: () => void
   onOpenSavedInvitations?: () => void
+  onSaveInvitation?: () => Promise<void> | void
 }
 
 const AVAILABLE_SECTION_TYPES: Array<{
@@ -97,6 +100,30 @@ export default function EditorTab({
       setSaveStatus('justSaved')
       setTimeout(() => setSaveStatus('saved'), 2000)
     }, 500)
+  }
+
+  // Manual Save Handler
+  const handleManualSave = async () => {
+    setSaveStatus('saving')
+    try {
+      saveSectionsDraft(rawSections)
+      saveEventDataDraft(eventData)
+      saveThemeDraft(activeTheme)
+
+      if (eventData?.invitationId) {
+        await saveInvitationSections(eventData.invitationId, rawSections)
+      }
+
+      if (onSaveInvitation) {
+        await onSaveInvitation()
+      }
+
+      setSaveStatus('justSaved')
+      setTimeout(() => setSaveStatus('saved'), 2500)
+    } catch (err) {
+      console.error('Error al guardar la invitación:', err)
+      setSaveStatus('saved')
+    }
   }
 
   // Update Section Handler
@@ -323,23 +350,34 @@ export default function EditorTab({
         </div>
 
         {/* Right Action buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           {onOpenSavedInvitations && (
             <button
               onClick={onOpenSavedInvitations}
               className="font-body text-xs text-brown border border-beige/80 px-3.5 py-2 rounded-full hover:bg-beige/30 transition-colors cursor-pointer flex items-center gap-1.5"
             >
               <span>📂</span>
-              <span>Mis Invitaciones</span>
+              <span className="hidden sm:inline">Mis Invitaciones</span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={handleManualSave}
+            disabled={saveStatus === 'saving'}
+            className="bg-emerald-700 hover:bg-emerald-800 text-white font-body font-medium text-xs px-4 py-2 rounded-full transition-all cursor-pointer shadow-xs flex items-center gap-1.5 disabled:opacity-60"
+            title="Guardar cambios de la invitación"
+          >
+            <span>{saveStatus === 'saving' ? '⏳' : saveStatus === 'justSaved' ? '✓' : '💾'}</span>
+            <span>{saveStatus === 'saving' ? 'Guardando...' : saveStatus === 'justSaved' ? '¡Guardado!' : 'Guardar'}</span>
+          </button>
 
           <button
             onClick={onOpenPublicView}
             className="font-body text-xs text-brown border border-beige/80 px-4 py-2 rounded-full hover:bg-beige/30 transition-colors cursor-pointer flex items-center gap-1.5"
           >
             <span>👁️</span>
-            <span>Vista previa</span>
+            <span className="hidden sm:inline">Vista previa</span>
           </button>
 
           <button
