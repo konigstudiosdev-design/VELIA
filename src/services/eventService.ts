@@ -339,7 +339,7 @@ export async function saveInvitationSections(
 
   const invRef = doc(db, 'invitations', invitationId)
   try {
-    await setDoc(
+    const savePromise = setDoc(
       invRef,
       {
         sections,
@@ -348,6 +348,8 @@ export async function saveInvitationSections(
       },
       { merge: true }
     )
+    const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 1500))
+    await Promise.race([savePromise, timeoutPromise])
   } catch (err) {
     console.warn('saveInvitationSections error fallback:', err)
   }

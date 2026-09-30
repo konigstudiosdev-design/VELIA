@@ -105,25 +105,34 @@ export default function EditorTab({
   // Manual Save Handler
   const handleManualSave = async () => {
     setSaveStatus('saving')
+
+    // Always persist to local drafts instantly
     try {
       saveSectionsDraft(rawSections)
       saveEventDataDraft(eventData)
       saveThemeDraft(activeTheme)
-
-      if (eventData?.invitationId) {
-        await saveInvitationSections(eventData.invitationId, rawSections)
-      }
-
-      if (onSaveInvitation) {
-        await onSaveInvitation()
-      }
-
-      setSaveStatus('justSaved')
-      setTimeout(() => setSaveStatus('saved'), 2500)
-    } catch (err) {
-      console.error('Error al guardar la invitación:', err)
-      setSaveStatus('saved')
+    } catch (e) {
+      console.warn('Draft save error:', e)
     }
+
+    // Persist to remote Firestore with a max 1.2s timeout so button NEVER gets stuck
+    try {
+      const saveRemotePromise = async () => {
+        if (onSaveInvitation) {
+          await onSaveInvitation()
+        } else if (eventData?.invitationId) {
+          await saveInvitationSections(eventData.invitationId, rawSections)
+        }
+      }
+
+      const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 1200))
+      await Promise.race([saveRemotePromise(), timeoutPromise])
+    } catch (err) {
+      console.error('Error al guardar la invitación remotamente:', err)
+    }
+
+    setSaveStatus('justSaved')
+    setTimeout(() => setSaveStatus('saved'), 2500)
   }
 
   // Update Section Handler
